@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { polish, translate } from "./api/client.js";
+import LearningDashboard from "./components/LearningDashboard.jsx";
 import { sampleHistory } from "./data/mockHistory.js";
 import {
   ERRORS_KEY,
@@ -427,23 +428,7 @@ function App() {
           )}
 
           {activeView === "profile" && (
-            <section className="profile-panel">
-              <h2>学习档案</h2>
-              <div className="profile-grid">
-                <div className="stat">
-                  <strong>{history.length}</strong>
-                  <span>历史记录</span>
-                </div>
-                <div className="stat">
-                  <strong>{expressions.length}</strong>
-                  <span>表达收藏</span>
-                </div>
-                <div className="stat">
-                  <strong>{errors.length}</strong>
-                  <span>错题沉淀</span>
-                </div>
-              </div>
-            </section>
+            <LearningDashboard errors={errors} expressions={expressions} history={history} />
           )}
         </section>
 
