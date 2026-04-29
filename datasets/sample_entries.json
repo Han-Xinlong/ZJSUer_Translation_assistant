@@ -1,0 +1,15 @@
+[
+  {
+    "id": "sample-001",
+    "source_language": "Chinese",
+    "target_language": "English",
+    "source_text": "今天我想练习一段关于校园学习生活的英文表达。",
+    "quick_translation": "Today I want to practice an English paragraph about campus learning and daily life.",
+    "deep_translation": "Today, I would like to practice writing an English paragraph about learning and daily life on campus.",
+    "learning_notes": [
+      "would like to is more suitable for semi-formal writing than want to.",
+      "on campus is more natural than in campus."
+    ]
+  }
+]
+

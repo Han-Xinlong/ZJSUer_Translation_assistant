@@ -154,15 +154,57 @@ ZJSUer Translation Assistant 不是一个复杂的专业翻译平台，而是聚
 ```text
 ZJSUer_Translation_assistant/
 ├── README.md
-├── docs/                  # 项目文档、调研材料、使用手册
-├── frontend/              # 前端应用
+├── docs/                  # 项目文档、架构说明、路线规划
+├── frontend/              # React + Vite 前端应用
 ├── backend/               # FastAPI 后端服务
 ├── prompts/               # AI Prompt 模板
 ├── datasets/              # 示例语料与测试数据
-└── scripts/               # 开发、测试和数据处理脚本
+└── scripts/               # 本地开发脚本
 ```
 
-> 当前仓库处于从 0 到 1 的初始化阶段，后续将逐步补充原型设计、技术文档、前后端代码和示例数据。
+## 本地开发
+
+建议环境：
+
+- Python 3.10 优先，Python 3.8 也可运行当前后端骨架。
+- Node.js 16+。
+- npm 首次安装依赖时可能需要较长时间下载 Vite、ECharts、Babel 等依赖，请耐心等待输出。
+
+### 启动后端
+
+```bash
+bash scripts/dev_backend.sh
+```
+
+后端默认运行在 `http://localhost:8000`，健康检查接口为 `GET /api/health`。脚本会优先使用 `python3.10` 创建虚拟环境；如果本机暂未安装 Python 3.10，则回退到 `python3`。
+
+### 启动前端
+
+```bash
+bash scripts/dev_frontend.sh
+```
+
+前端默认运行在 `http://localhost:5173`，开发环境会将 `/api` 请求代理到后端服务。
+
+> 当前仓库处于从 0 到 1 的初始化阶段，已完成基础目录、前端工作台雏形、FastAPI 服务骨架和 Prompt 模板占位。后续将继续补充真实模型调用、富文本编辑、本地学习数据存储和可视化能力。
+
+### 启用真实 AI 调用
+
+后端默认使用 `mock` 模式，便于无密钥演示。若要接入 OpenAI：
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+然后在 `backend/.env` 中配置：
+
+```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=your_api_key
+OPENAI_MODEL=gpt-5-mini
+```
+
+配置完成后重新启动后端即可。当前后端使用 OpenAI Responses API，并通过 Prompt 要求模型返回 JSON，方便前端稳定展示翻译、审校和润色结果。
 
 ## License
 
