@@ -11,8 +11,14 @@ import {
 
 import { polish, translate } from "./api/client.js";
 import { sampleHistory } from "./data/mockHistory.js";
-
-const STORAGE_KEY = "zjsuer.translation.history";
+import {
+  ERRORS_KEY,
+  EXPRESSIONS_KEY,
+  HISTORY_KEY,
+  loadCollection,
+  saveCollection,
+  saveUniqueItem
+} from "./utils/storage.js";
 
 const features = [
   {
@@ -43,7 +49,10 @@ function App() {
   const [targetLanguage, setTargetLanguage] = useState("English");
   const [translationResult, setTranslationResult] = useState(null);
   const [polishResult, setPolishResult] = useState(null);
-  const [history, setHistory] = useState(() => loadHistory());
+  const [history, setHistory] = useState(() => loadCollection(HISTORY_KEY, sampleHistory));
+  const [expressions, setExpressions] = useState(() => loadCollection(EXPRESSIONS_KEY));
+  const [errors, setErrors] = useState(() => loadCollection(ERRORS_KEY));
+  const [activeView, setActiveView] = useState("workspace");
   const [activeAction, setActiveAction] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -54,16 +63,24 @@ function App() {
   const expressionCount = useMemo(() => {
     const translationSuggestions = translationResult?.suggestions?.length ?? 0;
     const polishChanges = polishResult?.changes?.length ?? 0;
-    return history.length + translationSuggestions + polishChanges;
-  }, [history.length, polishResult, translationResult]);
+    return history.length + expressions.length + translationSuggestions + polishChanges;
+  }, [expressions.length, history.length, polishResult, translationResult]);
 
   const reviewCount = useMemo(() => {
-    return (polishResult?.changes?.length ?? 0) + (translationResult?.review ? 1 : 0);
-  }, [polishResult, translationResult]);
+    return errors.length + (polishResult?.changes?.length ?? 0) + (translationResult?.review ? 1 : 0);
+  }, [errors.length, polishResult, translationResult]);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    saveCollection(HISTORY_KEY, history);
   }, [history]);
+
+  useEffect(() => {
+    saveCollection(EXPRESSIONS_KEY, expressions);
+  }, [expressions]);
+
+  useEffect(() => {
+    saveCollection(ERRORS_KEY, errors);
+  }, [errors]);
 
   async function handleTranslate() {
     if (!canSubmit) {
@@ -136,7 +153,23 @@ function App() {
 
   function handleClearHistory() {
     setHistory([]);
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(HISTORY_KEY);
+  }
+
+  function handleSaveExpression(text, source = "AI 建议") {
+    setExpressions((items) => saveUniqueItem(items, text, source));
+  }
+
+  function handleSaveError(text, source = "AI 修改") {
+    setErrors((items) => saveUniqueItem(items, text, source));
+  }
+
+  function handleRemoveExpression(id) {
+    setExpressions((items) => items.filter((item) => item.id !== id));
+  }
+
+  function handleRemoveError(id) {
+    setErrors((items) => items.filter((item) => item.id !== id));
   }
 
   return (
@@ -152,10 +185,34 @@ function App() {
           </div>
 
           <nav className="nav-list">
-            <button className="nav-item active" type="button">写作台</button>
-            <button className="nav-item" type="button">表达库</button>
-            <button className="nav-item" type="button">错题库</button>
-            <button className="nav-item" type="button">学习档案</button>
+            <button
+              className={activeView === "workspace" ? "nav-item active" : "nav-item"}
+              onClick={() => setActiveView("workspace")}
+              type="button"
+            >
+              写作台
+            </button>
+            <button
+              className={activeView === "expressions" ? "nav-item active" : "nav-item"}
+              onClick={() => setActiveView("expressions")}
+              type="button"
+            >
+              表达库
+            </button>
+            <button
+              className={activeView === "errors" ? "nav-item active" : "nav-item"}
+              onClick={() => setActiveView("errors")}
+              type="button"
+            >
+              错题库
+            </button>
+            <button
+              className={activeView === "profile" ? "nav-item active" : "nav-item"}
+              onClick={() => setActiveView("profile")}
+              type="button"
+            >
+              学习档案
+            </button>
           </nav>
         </aside>
 
@@ -183,100 +240,173 @@ function App() {
             </div>
           </header>
 
-          <div className="toolbar" aria-label="工作台操作">
-            <label>
-              <span>目标语言</span>
-              <select value={targetLanguage} onChange={(event) => setTargetLanguage(event.target.value)}>
-                <option value="English">English</option>
-                <option value="Japanese">Japanese</option>
-                <option value="Korean">Korean</option>
-                <option value="Chinese">Chinese</option>
-              </select>
-            </label>
-            <button className="primary-action" disabled={!canSubmit} onClick={handleTranslate} type="button">
-              {activeAction === "translate" ? <Loader2 className="spin" size={18} /> : <Send size={18} />}
-              翻译
-            </button>
-            <button className="secondary-action" disabled={!canSubmit} onClick={handlePolish} type="button">
-              {activeAction === "polish" ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
-              润色
-            </button>
-          </div>
+          {activeView === "workspace" && (
+            <>
+              <div className="toolbar" aria-label="工作台操作">
+                <label>
+                  <span>目标语言</span>
+                  <select value={targetLanguage} onChange={(event) => setTargetLanguage(event.target.value)}>
+                    <option value="English">English</option>
+                    <option value="Japanese">Japanese</option>
+                    <option value="Korean">Korean</option>
+                    <option value="Chinese">Chinese</option>
+                  </select>
+                </label>
+                <button className="primary-action" disabled={!canSubmit} onClick={handleTranslate} type="button">
+                  {activeAction === "translate" ? <Loader2 className="spin" size={18} /> : <Send size={18} />}
+                  翻译
+                </button>
+                <button className="secondary-action" disabled={!canSubmit} onClick={handlePolish} type="button">
+                  {activeAction === "polish" ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
+                  润色
+                </button>
+              </div>
 
-          {errorMessage && <p className="error-message">{errorMessage}</p>}
+              {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-          <div className="writing-grid">
-            <label className="writing-box">
-              <span>原文输入</span>
-              <textarea
-                onChange={(event) => setSourceText(event.target.value)}
-                placeholder="输入你想翻译或润色的外语学习文本..."
-                value={sourceText}
-              />
-            </label>
+              <div className="writing-grid">
+                <label className="writing-box">
+                  <span>原文输入</span>
+                  <textarea
+                    onChange={(event) => setSourceText(event.target.value)}
+                    placeholder="输入你想翻译或润色的外语学习文本..."
+                    value={sourceText}
+                  />
+                </label>
 
-            <section className="result-box" aria-label="AI 输出">
-              <span>AI 输出</span>
-              {translationResult || polishResult ? (
-                <div className="result-stack">
-                  {translationResult && (
-                    <article className="result-section">
-                      <h2>{translationResult.mode === "deep" ? "深度翻译" : "快速翻译"}</h2>
-                      <p className="provider-note">
-                        {translationResult.provider}
-                        {translationResult.model ? ` / ${translationResult.model}` : ""}
-                      </p>
-                      <p>{translationResult.translation}</p>
-                      {translationResult.review && <p className="review-note">{translationResult.review}</p>}
-                      {translationResult.suggestions.length > 0 && (
-                        <ul>
-                          {translationResult.suggestions.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
+                <section className="result-box" aria-label="AI 输出">
+                  <span>AI 输出</span>
+                  {translationResult || polishResult ? (
+                    <div className="result-stack">
+                      {translationResult && (
+                        <article className="result-section">
+                          <h2>{translationResult.mode === "deep" ? "深度翻译" : "快速翻译"}</h2>
+                          <p className="provider-note">
+                            {translationResult.provider}
+                            {translationResult.model ? ` / ${translationResult.model}` : ""}
+                          </p>
+                          <p>{translationResult.translation}</p>
+                          <button
+                            className="inline-save"
+                            type="button"
+                            onClick={() => handleSaveExpression(translationResult.translation, "译文")}
+                          >
+                            收藏表达
+                          </button>
+                          {translationResult.review && (
+                            <div className="review-note">
+                              <p>{translationResult.review}</p>
+                              <button type="button" onClick={() => handleSaveError(translationResult.review, "审校说明")}>
+                                加入错题
+                              </button>
+                            </div>
+                          )}
+                          {translationResult.suggestions.length > 0 && (
+                            <ul className="learning-list">
+                              {translationResult.suggestions.map((item) => (
+                                <li key={item}>
+                                  <span>{item}</span>
+                                  <button type="button" onClick={() => handleSaveExpression(item, "翻译建议")}>
+                                    收藏
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </article>
                       )}
-                    </article>
-                  )}
 
-                  {polishResult && (
-                    <article className="result-section">
-                      <h2>润色版本</h2>
-                      <p className="provider-note">
-                        {polishResult.provider}
-                        {polishResult.model ? ` / ${polishResult.model}` : ""}
-                      </p>
-                      <p>{polishResult.polished_text}</p>
-                      {polishResult.changes.length > 0 && (
-                        <ul>
-                          {polishResult.changes.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
+                      {polishResult && (
+                        <article className="result-section">
+                          <h2>润色版本</h2>
+                          <p className="provider-note">
+                            {polishResult.provider}
+                            {polishResult.model ? ` / ${polishResult.model}` : ""}
+                          </p>
+                          <p>{polishResult.polished_text}</p>
+                          <button
+                            className="inline-save"
+                            type="button"
+                            onClick={() => handleSaveExpression(polishResult.polished_text, "润色版本")}
+                          >
+                            收藏表达
+                          </button>
+                          {polishResult.changes.length > 0 && (
+                            <ul className="learning-list">
+                              {polishResult.changes.map((item) => (
+                                <li key={item}>
+                                  <span>{item}</span>
+                                  <button type="button" onClick={() => handleSaveError(item, "润色修改")}>
+                                    加入错题
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </article>
                       )}
-                    </article>
+                    </div>
+                  ) : (
+                    <div className="empty-state">
+                      <Languages size={28} aria-hidden="true" />
+                      <p>选择模式后点击翻译或润色，AI 结果会显示在这里。</p>
+                    </div>
                   )}
+                </section>
+              </div>
+
+              <div className="feature-grid">
+                {features.map((feature) => {
+                  const Icon = feature.icon;
+                  return (
+                    <article className="feature-card" key={feature.title}>
+                      <Icon size={22} aria-hidden="true" />
+                      <h2>{feature.title}</h2>
+                      <p>{feature.text}</p>
+                    </article>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {activeView === "expressions" && (
+            <CollectionView
+              emptyText="还没有收藏表达。回到写作台，把译文或建议收入表达库。"
+              items={expressions}
+              onRemove={handleRemoveExpression}
+              title="表达库"
+            />
+          )}
+
+          {activeView === "errors" && (
+            <CollectionView
+              emptyText="还没有错题。把审校说明和润色修改加入错题库后，会在这里集中复习。"
+              items={errors}
+              onRemove={handleRemoveError}
+              title="错题库"
+            />
+          )}
+
+          {activeView === "profile" && (
+            <section className="profile-panel">
+              <h2>学习档案</h2>
+              <div className="profile-grid">
+                <div className="stat">
+                  <strong>{history.length}</strong>
+                  <span>历史记录</span>
                 </div>
-              ) : (
-                <div className="empty-state">
-                  <Languages size={28} aria-hidden="true" />
-                  <p>选择模式后点击翻译或润色，AI 结果会显示在这里。</p>
+                <div className="stat">
+                  <strong>{expressions.length}</strong>
+                  <span>表达收藏</span>
                 </div>
-              )}
+                <div className="stat">
+                  <strong>{errors.length}</strong>
+                  <span>错题沉淀</span>
+                </div>
+              </div>
             </section>
-          </div>
-
-          <div className="feature-grid">
-            {features.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <article className="feature-card" key={feature.title}>
-                  <Icon size={22} aria-hidden="true" />
-                  <h2>{feature.title}</h2>
-                  <p>{feature.text}</p>
-                </article>
-              );
-            })}
-          </div>
+          )}
         </section>
 
         <aside className="insight-panel" aria-label="成长概览">
@@ -311,17 +441,28 @@ function App() {
   );
 }
 
-function loadHistory() {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return sampleHistory;
-    }
-    const value = JSON.parse(raw);
-    return Array.isArray(value) ? value : sampleHistory;
-  } catch {
-    return sampleHistory;
-  }
+function CollectionView({ emptyText, items, onRemove, title }) {
+  return (
+    <section className="collection-panel">
+      <h2>{title}</h2>
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <BookOpen size={28} aria-hidden="true" />
+          <p>{emptyText}</p>
+        </div>
+      ) : (
+        <ul className="collection-list">
+          {items.map((item) => (
+            <li key={item.id}>
+              <span>{item.source}</span>
+              <p>{item.text}</p>
+              <button type="button" onClick={() => onRemove(item.id)}>移除</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
 
 export default App;

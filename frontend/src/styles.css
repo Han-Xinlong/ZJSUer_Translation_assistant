@@ -278,6 +278,26 @@ textarea {
   padding-left: 10px;
 }
 
+.review-note p {
+  margin-bottom: 8px;
+}
+
+.review-note button,
+.inline-save,
+.learning-list button,
+.collection-list button {
+  border: 1px solid #cfd7df;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f4c4a;
+  font-size: 13px;
+  padding: 6px 9px;
+}
+
+.inline-save {
+  margin: 0 0 12px;
+}
+
 .provider-note {
   color: #667085;
   font-size: 12px;
@@ -285,10 +305,23 @@ textarea {
   text-transform: uppercase;
 }
 
-.result-box ul {
+.learning-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.learning-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  border-top: 1px solid #edf0f3;
   color: #475467;
   line-height: 1.7;
-  padding-left: 20px;
+  padding-top: 10px;
 }
 
 .empty-state {
@@ -334,6 +367,50 @@ textarea {
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 0;
+}
+
+.collection-panel,
+.profile-panel {
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+  min-height: 420px;
+  padding: 18px;
+}
+
+.collection-panel h2,
+.profile-panel h2 {
+  font-size: 20px;
+}
+
+.collection-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.collection-list li {
+  border: 1px solid #e5e8ec;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.collection-list span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.collection-list p {
+  line-height: 1.7;
+  margin: 6px 0 12px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .insight-panel {
@@ -438,7 +515,8 @@ textarea {
 
   .workspace,
   .writing-grid,
-  .feature-grid {
+  .feature-grid,
+  .profile-grid {
     grid-template-columns: 1fr;
   }
 
