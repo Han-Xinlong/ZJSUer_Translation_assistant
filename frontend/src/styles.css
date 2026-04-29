@@ -85,6 +85,11 @@ button {
   color: #0f4c4a;
 }
 
+.nav-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .editor-panel {
   padding: 6px 8px;
 }
@@ -370,7 +375,8 @@ textarea {
 }
 
 .collection-panel,
-.profile-panel {
+.profile-panel,
+.history-detail {
   border: 1px solid #d7dde5;
   border-radius: 8px;
   background: #ffffff;
@@ -379,7 +385,8 @@ textarea {
 }
 
 .collection-panel h2,
-.profile-panel h2 {
+.profile-panel h2,
+.history-detail h2 {
   font-size: 20px;
 }
 
@@ -411,6 +418,62 @@ textarea {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.detail-header p {
+  color: #667085;
+  font-size: 13px;
+  margin-bottom: 0;
+}
+
+.detail-header button,
+.comparison-grid button,
+.detail-note button {
+  border: 1px solid #cfd7df;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f4c4a;
+  font-size: 13px;
+  padding: 7px 10px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.comparison-grid article,
+.detail-note {
+  border: 1px solid #e5e8ec;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.comparison-grid span,
+.detail-note > span {
+  display: block;
+  color: #667085;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.comparison-grid p,
+.detail-note p {
+  line-height: 1.7;
+}
+
+.detail-note {
+  margin-top: 12px;
 }
 
 .insight-panel {
@@ -516,7 +579,8 @@ textarea {
   .workspace,
   .writing-grid,
   .feature-grid,
-  .profile-grid {
+  .profile-grid,
+  .comparison-grid {
     grid-template-columns: 1fr;
   }
 
