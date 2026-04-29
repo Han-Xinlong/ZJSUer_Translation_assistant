@@ -2,6 +2,7 @@ export const HISTORY_KEY = "zjsuer.translation.history";
 export const EXPRESSIONS_KEY = "zjsuer.translation.expressions";
 export const ERRORS_KEY = "zjsuer.translation.errors";
 export const GOALS_KEY = "zjsuer.translation.goals";
+export const COMMUNITY_KEY = "zjsuer.translation.community";
 
 export function loadCollection(key, fallback = []) {
   try {

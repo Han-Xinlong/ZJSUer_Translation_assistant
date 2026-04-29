@@ -146,6 +146,7 @@ h1 {
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 10px;
   margin-bottom: 16px;
@@ -176,6 +177,21 @@ input {
   background: #ffffff;
   color: #202124;
   padding: 9px 10px;
+}
+
+.context-box {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.context-box span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.context-box input {
+  width: 100%;
 }
 
 .primary-action,
@@ -225,6 +241,19 @@ input {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
+}
+
+.writing-grid.immersive {
+  grid-template-columns: 1fr;
+}
+
+.writing-grid.immersive .writing-box {
+  min-height: 520px;
+}
+
+.writing-grid.immersive textarea {
+  min-height: 450px;
+  font-size: 18px;
 }
 
 .writing-box,
@@ -382,6 +411,56 @@ textarea {
   margin-bottom: 0;
 }
 
+.corpus-panel {
+  margin-top: 16px;
+}
+
+.corpus-panel h2 {
+  font-size: 18px;
+}
+
+.corpus-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.corpus-grid article {
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.corpus-grid span,
+.community-list span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.corpus-grid p {
+  line-height: 1.6;
+  margin: 6px 0;
+}
+
+.corpus-grid small,
+.community-list small {
+  color: #667085;
+  display: block;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.corpus-grid button,
+.community-list button {
+  border: 1px solid #cfd7df;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f4c4a;
+  font-size: 13px;
+  padding: 6px 9px;
+}
+
 .collection-panel,
 .profile-panel,
 .history-detail {
@@ -406,10 +485,25 @@ textarea {
   padding: 0;
 }
 
-.collection-list li {
+.community-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.collection-list li,
+.community-list li {
   border: 1px solid #e5e8ec;
   border-radius: 8px;
   padding: 14px;
+}
+
+.community-list li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .collection-list span {
@@ -417,7 +511,8 @@ textarea {
   font-size: 13px;
 }
 
-.collection-list p {
+.collection-list p,
+.community-list p {
   line-height: 1.7;
   margin: 6px 0 12px;
 }
@@ -719,6 +814,7 @@ textarea {
   .workspace,
   .writing-grid,
   .feature-grid,
+  .corpus-grid,
   .profile-grid,
   .goal-panel,
   .dashboard-grid,

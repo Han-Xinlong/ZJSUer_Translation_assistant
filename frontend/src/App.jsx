@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   BrainCircuit,
+  Maximize2,
   Languages,
   Loader2,
   Mic,
@@ -11,8 +12,10 @@ import {
 
 import { polish, translate } from "./api/client.js";
 import LearningDashboard from "./components/LearningDashboard.jsx";
+import { corpusExamples } from "./data/corpus.js";
 import { sampleHistory } from "./data/mockHistory.js";
 import {
+  COMMUNITY_KEY,
   ERRORS_KEY,
   EXPRESSIONS_KEY,
   GOALS_KEY,
@@ -60,10 +63,14 @@ function App() {
   const [history, setHistory] = useState(() => loadCollection(HISTORY_KEY, sampleHistory));
   const [expressions, setExpressions] = useState(() => loadCollection(EXPRESSIONS_KEY));
   const [errors, setErrors] = useState(() => loadCollection(ERRORS_KEY));
+  const [communityPosts, setCommunityPosts] = useState(() => loadCollection(COMMUNITY_KEY));
   const [goals, setGoals] = useState(() => ({
     ...DEFAULT_GOALS,
     ...loadObject(GOALS_KEY, DEFAULT_GOALS)
   }));
+  const [contextText, setContextText] = useState("");
+  const [isImmersive, setIsImmersive] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [activeView, setActiveView] = useState("workspace");
   const [selectedHistoryId, setSelectedHistoryId] = useState(() => history[0]?.id || null);
   const [activeAction, setActiveAction] = useState(null);
@@ -93,6 +100,13 @@ function App() {
     return history.slice(0, 6);
   }, [history]);
 
+  const corpusRecommendations = useMemo(() => {
+    const source = `${sourceText} ${translationResult?.translation || ""} ${polishResult?.polished_text || ""}`.toLowerCase();
+    return corpusExamples
+      .filter((item) => item.keywords.some((keyword) => source.includes(keyword.toLowerCase())))
+      .slice(0, 3);
+  }, [polishResult, sourceText, translationResult]);
+
   useEffect(() => {
     saveCollection(HISTORY_KEY, history);
   }, [history]);
@@ -116,6 +130,10 @@ function App() {
   }, [errors]);
 
   useEffect(() => {
+    saveCollection(COMMUNITY_KEY, communityPosts);
+  }, [communityPosts]);
+
+  useEffect(() => {
     saveObject(GOALS_KEY, goals);
   }, [goals]);
 
@@ -130,6 +148,7 @@ function App() {
     try {
       const result = await translate({
         text: trimmedText,
+        context: contextText.trim() || null,
         target_language: targetLanguage,
         mode
       });
@@ -164,6 +183,7 @@ function App() {
     try {
       const result = await polish({
         text: trimmedText,
+        context: contextText.trim() || null,
         target_language: targetLanguage
       });
       const historyItem = {
@@ -215,6 +235,55 @@ function App() {
     setErrors((items) => items.filter((item) => item.id !== id));
   }
 
+  function handleVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setErrorMessage("当前浏览器暂不支持语音识别。可以继续使用文本输入。");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = targetLanguage === "Chinese" ? "zh-CN" : "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => {
+      setIsListening(true);
+      setErrorMessage("");
+    };
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setSourceText((value) => `${value}${value ? "\n" : ""}${transcript}`);
+    };
+    recognition.onerror = () => {
+      setErrorMessage("语音识别失败，请检查浏览器权限后重试。");
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+    recognition.start();
+  }
+
+  function handleShareToCommunity(text, source) {
+    const normalized = text?.trim();
+    if (!normalized) {
+      return;
+    }
+    setCommunityPosts((items) => [
+      {
+        id: crypto.randomUUID(),
+        text: normalized,
+        source,
+        createdAt: new Date().toISOString()
+      },
+      ...items
+    ]);
+    setActiveView("community");
+  }
+
+  function handleRemoveCommunityPost(id) {
+    setCommunityPosts((items) => items.filter((item) => item.id !== id));
+  }
+
   return (
     <main className="app-shell">
       <section className="workspace">
@@ -264,6 +333,13 @@ function App() {
             >
               学习档案
             </button>
+            <button
+              className={activeView === "community" ? "nav-item active" : "nav-item"}
+              onClick={() => setActiveView("community")}
+              type="button"
+            >
+              社群互学
+            </button>
           </nav>
         </aside>
 
@@ -311,11 +387,28 @@ function App() {
                   {activeAction === "polish" ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
                   润色
                 </button>
+                <button className="secondary-action" disabled={isListening} onClick={handleVoiceInput} type="button">
+                  {isListening ? <Loader2 className="spin" size={18} /> : <Mic size={18} />}
+                  语音
+                </button>
+                <button className="secondary-action" onClick={() => setIsImmersive((value) => !value)} type="button">
+                  <Maximize2 size={18} />
+                  {isImmersive ? "退出沉浸" : "沉浸"}
+                </button>
               </div>
 
               {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-              <div className="writing-grid">
+              <label className="context-box">
+                <span>语境说明</span>
+                <input
+                  onChange={(event) => setContextText(event.target.value)}
+                  placeholder="例如：课程作业、正式邮件、校园生活分享..."
+                  value={contextText}
+                />
+              </label>
+
+              <div className={isImmersive ? "writing-grid immersive" : "writing-grid"}>
                 <label className="writing-box">
                   <span>原文输入</span>
                   <textarea
@@ -343,6 +436,13 @@ function App() {
                             onClick={() => handleSaveExpression(translationResult.translation, "译文")}
                           >
                             收藏表达
+                          </button>
+                          <button
+                            className="inline-save"
+                            type="button"
+                            onClick={() => handleShareToCommunity(translationResult.translation, "译文分享")}
+                          >
+                            分享社群
                           </button>
                           {translationResult.review && (
                             <div className="review-note">
@@ -382,6 +482,13 @@ function App() {
                           >
                             收藏表达
                           </button>
+                          <button
+                            className="inline-save"
+                            type="button"
+                            onClick={() => handleShareToCommunity(polishResult.polished_text, "润色分享")}
+                          >
+                            分享社群
+                          </button>
                           {polishResult.changes.length > 0 && (
                             <ul className="learning-list">
                               {polishResult.changes.map((item) => (
@@ -418,6 +525,8 @@ function App() {
                   );
                 })}
               </div>
+
+              <CorpusPanel items={corpusRecommendations} onSaveExpression={handleSaveExpression} />
             </>
           )}
 
@@ -456,6 +565,10 @@ function App() {
               history={history}
               onGoalsChange={setGoals}
             />
+          )}
+
+          {activeView === "community" && (
+            <CommunityView items={communityPosts} onRemove={handleRemoveCommunityPost} />
           )}
         </section>
 
@@ -512,6 +625,55 @@ function CollectionView({ emptyText, items, onRemove, title }) {
           {items.map((item) => (
             <li key={item.id}>
               <span>{item.source}</span>
+              <p>{item.text}</p>
+              <button type="button" onClick={() => onRemove(item.id)}>移除</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function CorpusPanel({ items, onSaveExpression }) {
+  const visibleItems = items.length > 0 ? items : corpusExamples.slice(0, 3);
+
+  return (
+    <section className="corpus-panel">
+      <h2>推荐语料</h2>
+      <div className="corpus-grid">
+        {visibleItems.map((item) => (
+          <article key={item.id}>
+            <span>{item.title}</span>
+            <p>{item.expression}</p>
+            <small>{item.note}</small>
+            <button type="button" onClick={() => onSaveExpression(item.expression, "推荐语料")}>
+              收藏表达
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CommunityView({ items, onRemove }) {
+  return (
+    <section className="collection-panel">
+      <h2>社群互学</h2>
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <Languages size={28} aria-hidden="true" />
+          <p>还没有共享内容。在写作台把译文或润色版本分享到社群，积累可互学的语料。</p>
+        </div>
+      ) : (
+        <ul className="community-list">
+          {items.map((item) => (
+            <li key={item.id}>
+              <div>
+                <span>{item.source}</span>
+                <small>{formatDate(item.createdAt)}</small>
+              </div>
               <p>{item.text}</p>
               <button type="button" onClick={() => onRemove(item.id)}>移除</button>
             </li>
