@@ -53,7 +53,7 @@ function App() {
   const [expressions, setExpressions] = useState(() => loadCollection(EXPRESSIONS_KEY));
   const [errors, setErrors] = useState(() => loadCollection(ERRORS_KEY));
   const [activeView, setActiveView] = useState("workspace");
-  const [selectedHistoryId, setSelectedHistoryId] = useState(null);
+  const [selectedHistoryId, setSelectedHistoryId] = useState(() => history[0]?.id || null);
   const [activeAction, setActiveAction] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -80,6 +80,16 @@ function App() {
   }, [history]);
 
   useEffect(() => {
+    if (history.length === 0) {
+      setSelectedHistoryId(null);
+      return;
+    }
+    if (!selectedHistoryId || !history.some((item) => item.id === selectedHistoryId)) {
+      setSelectedHistoryId(history[0].id);
+    }
+  }, [history, selectedHistoryId]);
+
+  useEffect(() => {
     saveCollection(EXPRESSIONS_KEY, expressions);
   }, [expressions]);
 
@@ -101,20 +111,19 @@ function App() {
         target_language: targetLanguage,
         mode
       });
+      const historyItem = {
+        id: crypto.randomUUID(),
+        type: mode === "deep" ? "深度翻译" : "快速翻译",
+        text: result.translation,
+        sourceText: trimmedText,
+        targetLanguage,
+        mode,
+        result,
+        createdAt: new Date().toISOString()
+      };
       setTranslationResult(result);
-      setHistory((items) => [
-        {
-          id: crypto.randomUUID(),
-          type: mode === "deep" ? "深度翻译" : "快速翻译",
-          text: result.translation,
-          sourceText: trimmedText,
-          targetLanguage,
-          mode,
-          result,
-          createdAt: new Date().toISOString()
-        },
-        ...items
-      ].slice(0, 6));
+      setSelectedHistoryId(historyItem.id);
+      setHistory((items) => [historyItem, ...items].slice(0, 6));
     } catch (error) {
       setErrorMessage(error.message || "翻译请求失败，请确认后端服务已启动。");
     } finally {
@@ -135,19 +144,18 @@ function App() {
         text: trimmedText,
         target_language: targetLanguage
       });
+      const historyItem = {
+        id: crypto.randomUUID(),
+        type: "润色",
+        text: result.polished_text,
+        sourceText: trimmedText,
+        targetLanguage,
+        result,
+        createdAt: new Date().toISOString()
+      };
       setPolishResult(result);
-      setHistory((items) => [
-        {
-          id: crypto.randomUUID(),
-          type: "润色",
-          text: result.polished_text,
-          sourceText: trimmedText,
-          targetLanguage,
-          result,
-          createdAt: new Date().toISOString()
-        },
-        ...items
-      ].slice(0, 6));
+      setSelectedHistoryId(historyItem.id);
+      setHistory((items) => [historyItem, ...items].slice(0, 6));
     } catch (error) {
       setErrorMessage(error.message || "润色请求失败，请确认后端服务已启动。");
     } finally {
@@ -221,7 +229,7 @@ function App() {
             </button>
             <button
               className={activeView === "history" ? "nav-item active" : "nav-item"}
-              disabled={!selectedHistory}
+              disabled={history.length === 0}
               onClick={() => setActiveView("history")}
               type="button"
             >
