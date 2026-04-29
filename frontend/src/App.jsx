@@ -74,10 +74,8 @@ function App() {
   const canSubmit = trimmedText.length > 0 && !isBusy;
 
   const expressionCount = useMemo(() => {
-    const translationSuggestions = translationResult?.suggestions?.length ?? 0;
-    const polishChanges = polishResult?.changes?.length ?? 0;
-    return history.length + expressions.length + translationSuggestions + polishChanges;
-  }, [expressions.length, history.length, polishResult, translationResult]);
+    return history.length + expressions.length;
+  }, [expressions.length, history.length]);
 
   const reviewCount = useMemo(() => {
     return errors.length + (polishResult?.changes?.length ?? 0) + (translationResult?.review ? 1 : 0);
@@ -90,6 +88,10 @@ function App() {
   const todayProgress = useMemo(() => {
     return countTodayItems([...history, ...expressions, ...errors]);
   }, [errors, expressions, history]);
+
+  const recentHistory = useMemo(() => {
+    return history.slice(0, 6);
+  }, [history]);
 
   useEffect(() => {
     saveCollection(HISTORY_KEY, history);
@@ -143,7 +145,7 @@ function App() {
       };
       setTranslationResult(result);
       setSelectedHistoryId(historyItem.id);
-      setHistory((items) => [historyItem, ...items].slice(0, 6));
+      setHistory((items) => [historyItem, ...items]);
     } catch (error) {
       setErrorMessage(error.message || "翻译请求失败，请确认后端服务已启动。");
     } finally {
@@ -175,7 +177,7 @@ function App() {
       };
       setPolishResult(result);
       setSelectedHistoryId(historyItem.id);
-      setHistory((items) => [historyItem, ...items].slice(0, 6));
+      setHistory((items) => [historyItem, ...items]);
     } catch (error) {
       setErrorMessage(error.message || "润色请求失败，请确认后端服务已启动。");
     } finally {
@@ -480,7 +482,7 @@ function App() {
               <button type="button" onClick={handleClearHistory}>清空</button>
             </div>
             <ul className="history-list">
-              {history.map((item) => (
+              {recentHistory.map((item) => (
                 <li key={item.id}>
                   <button type="button" onClick={() => handleLoadHistory(item)}>
                     <span>{item.type}</span>
