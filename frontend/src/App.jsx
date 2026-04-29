@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   BrainCircuit,
@@ -11,6 +11,8 @@ import {
 
 import { polish, translate } from "./api/client.js";
 import { sampleHistory } from "./data/mockHistory.js";
+
+const STORAGE_KEY = "zjsuer.translation.history";
 
 const features = [
   {
@@ -41,7 +43,7 @@ function App() {
   const [targetLanguage, setTargetLanguage] = useState("English");
   const [translationResult, setTranslationResult] = useState(null);
   const [polishResult, setPolishResult] = useState(null);
-  const [history, setHistory] = useState(sampleHistory);
+  const [history, setHistory] = useState(() => loadHistory());
   const [activeAction, setActiveAction] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -58,6 +60,10 @@ function App() {
   const reviewCount = useMemo(() => {
     return (polishResult?.changes?.length ?? 0) + (translationResult?.review ? 1 : 0);
   }, [polishResult, translationResult]);
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  }, [history]);
 
   async function handleTranslate() {
     if (!canSubmit) {
@@ -78,7 +84,9 @@ function App() {
         {
           id: crypto.randomUUID(),
           type: mode === "deep" ? "深度翻译" : "快速翻译",
-          text: result.translation
+          text: result.translation,
+          sourceText: trimmedText,
+          createdAt: new Date().toISOString()
         },
         ...items
       ].slice(0, 6));
@@ -107,7 +115,9 @@ function App() {
         {
           id: crypto.randomUUID(),
           type: "润色",
-          text: result.polished_text
+          text: result.polished_text,
+          sourceText: trimmedText,
+          createdAt: new Date().toISOString()
         },
         ...items
       ].slice(0, 6));
@@ -116,6 +126,17 @@ function App() {
     } finally {
       setActiveAction(null);
     }
+  }
+
+  function handleLoadHistory(item) {
+    if (item.sourceText) {
+      setSourceText(item.sourceText);
+    }
+  }
+
+  function handleClearHistory() {
+    setHistory([]);
+    window.localStorage.removeItem(STORAGE_KEY);
   }
 
   return (
@@ -269,12 +290,17 @@ function App() {
             <span>待复习错误</span>
           </div>
           <section>
-            <h3>最近记录</h3>
+            <div className="section-title-row">
+              <h3>最近记录</h3>
+              <button type="button" onClick={handleClearHistory}>清空</button>
+            </div>
             <ul className="history-list">
-              {sampleHistory.map((item) => (
+              {history.map((item) => (
                 <li key={item.id}>
-                  <span>{item.type}</span>
-                  <p>{item.text}</p>
+                  <button type="button" onClick={() => handleLoadHistory(item)}>
+                    <span>{item.type}</span>
+                    <p>{item.text}</p>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -283,6 +309,19 @@ function App() {
       </section>
     </main>
   );
+}
+
+function loadHistory() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return sampleHistory;
+    }
+    const value = JSON.parse(raw);
+    return Array.isArray(value) ? value : sampleHistory;
+  } catch {
+    return sampleHistory;
+  }
 }
 
 export default App;
