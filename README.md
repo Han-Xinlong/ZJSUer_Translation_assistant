@@ -170,6 +170,30 @@ ZJSUer_Translation_assistant/
 - Node.js 16+。
 - npm 首次安装依赖时可能需要较长时间下载 Vite、ECharts、Babel 等依赖，请耐心等待输出。
 
+### 给非开发同学的快速体验方式
+
+如果只是想从 GitHub 下载项目并体验前端交互，推荐直接阅读这份说明：
+
+- [给同学体验前端交互的快速指南](docs/classmate_quick_start.md)
+
+最短路径是打开两个终端，分别运行：
+
+```bash
+bash scripts/dev_backend.sh
+```
+
+```bash
+bash scripts/dev_frontend.sh
+```
+
+然后在浏览器访问：
+
+```text
+http://localhost:5173
+```
+
+后端默认是 `mock` 模式，不需要配置真实 AI Key，也可以体验翻译、润色、收藏表达、错题库、历史详情和学习档案等完整流程。
+
 ### 启动后端
 
 ```bash
