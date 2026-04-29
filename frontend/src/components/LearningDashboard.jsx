@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 
-function LearningDashboard({ errors, expressions, history }) {
+function LearningDashboard({ errors, expressions, goals, history, onGoalsChange }) {
   const chartRef = useRef(null);
 
   const days = useMemo(() => buildRecentDays(14), []);
@@ -8,6 +8,10 @@ function LearningDashboard({ errors, expressions, history }) {
   const dailyCounts = useMemo(() => {
     return countByDate([...history, ...expressions, ...errors]);
   }, [errors, expressions, history]);
+  const todayCount = dailyCounts[toDateKey(new Date())] || 0;
+  const streak = useMemo(() => {
+    return calculateStreak(dailyCounts);
+  }, [dailyCounts]);
 
   const sevenDaySeries = useMemo(() => {
     return recentSevenDays.map((day) => ({
@@ -115,6 +119,37 @@ function LearningDashboard({ errors, expressions, history }) {
         </div>
       </div>
 
+      <article className="goal-panel">
+        <div>
+          <h3>每日目标</h3>
+          <p>{todayCount >= goals.dailyTarget ? "今日目标已完成" : "继续积累，保持节奏"}</p>
+        </div>
+        <label>
+          <span>每日条目</span>
+          <input
+            min="1"
+            max="20"
+            type="number"
+            value={goals.dailyTarget}
+            onChange={(event) => {
+              onGoalsChange({
+                ...goals,
+                dailyTarget: Math.max(1, Number(event.target.value) || 1)
+              });
+            }}
+          />
+        </label>
+        <div className="goal-progress">
+          <strong>{Math.min(todayCount, goals.dailyTarget)}</strong>
+          <span>/ {goals.dailyTarget}</span>
+          <progress max={goals.dailyTarget} value={Math.min(todayCount, goals.dailyTarget)} />
+        </div>
+        <div className="streak-badge">
+          <strong>{streak}</strong>
+          <span>连续天数</span>
+        </div>
+      </article>
+
       <div className="dashboard-grid">
         <article className="dashboard-card">
           <h3>近 7 天练习趋势</h3>
@@ -160,6 +195,18 @@ function countByDate(items) {
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
+}
+
+function calculateStreak(dailyCounts) {
+  let streak = 0;
+  const cursor = startOfDay(new Date());
+
+  while (dailyCounts[toDateKey(cursor)] > 0) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
 }
 
 function startOfDay(date) {

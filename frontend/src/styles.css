@@ -170,6 +170,14 @@ select {
   padding: 9px 10px;
 }
 
+input {
+  border: 1px solid #cfd7df;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #202124;
+  padding: 9px 10px;
+}
+
 .primary-action,
 .secondary-action {
   display: inline-flex;
@@ -421,6 +429,55 @@ textarea {
   margin-bottom: 14px;
 }
 
+.goal-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px 180px 120px;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e5e8ec;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  padding: 14px;
+}
+
+.goal-panel h3 {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.goal-panel p,
+.goal-panel span {
+  color: #667085;
+  font-size: 13px;
+  margin-bottom: 0;
+}
+
+.goal-panel label {
+  display: grid;
+  gap: 6px;
+}
+
+.goal-progress,
+.streak-badge {
+  border: 1px solid #edf0f3;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.goal-progress strong,
+.streak-badge strong {
+  font-size: 24px;
+}
+
+.goal-progress progress,
+.goal-card progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  margin-top: 8px;
+  accent-color: #0f766e;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
@@ -568,6 +625,23 @@ textarea {
   font-size: 13px;
 }
 
+.goal-card {
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+  margin-bottom: 12px;
+  padding: 14px;
+}
+
+.goal-card strong {
+  font-size: 24px;
+}
+
+.goal-card span {
+  color: #667085;
+  font-size: 13px;
+}
+
 .section-title-row {
   display: flex;
   align-items: center;
@@ -646,6 +720,7 @@ textarea {
   .writing-grid,
   .feature-grid,
   .profile-grid,
+  .goal-panel,
   .dashboard-grid,
   .comparison-grid {
     grid-template-columns: 1fr;

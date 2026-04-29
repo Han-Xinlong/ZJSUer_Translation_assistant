@@ -15,11 +15,18 @@ import { sampleHistory } from "./data/mockHistory.js";
 import {
   ERRORS_KEY,
   EXPRESSIONS_KEY,
+  GOALS_KEY,
   HISTORY_KEY,
   loadCollection,
+  loadObject,
   saveCollection,
+  saveObject,
   saveUniqueItem
 } from "./utils/storage.js";
+
+const DEFAULT_GOALS = {
+  dailyTarget: 3
+};
 
 const features = [
   {
@@ -53,6 +60,10 @@ function App() {
   const [history, setHistory] = useState(() => loadCollection(HISTORY_KEY, sampleHistory));
   const [expressions, setExpressions] = useState(() => loadCollection(EXPRESSIONS_KEY));
   const [errors, setErrors] = useState(() => loadCollection(ERRORS_KEY));
+  const [goals, setGoals] = useState(() => ({
+    ...DEFAULT_GOALS,
+    ...loadObject(GOALS_KEY, DEFAULT_GOALS)
+  }));
   const [activeView, setActiveView] = useState("workspace");
   const [selectedHistoryId, setSelectedHistoryId] = useState(() => history[0]?.id || null);
   const [activeAction, setActiveAction] = useState(null);
@@ -76,6 +87,10 @@ function App() {
     return history.find((item) => item.id === selectedHistoryId) || null;
   }, [history, selectedHistoryId]);
 
+  const todayProgress = useMemo(() => {
+    return countTodayItems([...history, ...expressions, ...errors]);
+  }, [errors, expressions, history]);
+
   useEffect(() => {
     saveCollection(HISTORY_KEY, history);
   }, [history]);
@@ -97,6 +112,10 @@ function App() {
   useEffect(() => {
     saveCollection(ERRORS_KEY, errors);
   }, [errors]);
+
+  useEffect(() => {
+    saveObject(GOALS_KEY, goals);
+  }, [goals]);
 
   async function handleTranslate() {
     if (!canSubmit) {
@@ -428,7 +447,13 @@ function App() {
           )}
 
           {activeView === "profile" && (
-            <LearningDashboard errors={errors} expressions={expressions} history={history} />
+            <LearningDashboard
+              errors={errors}
+              expressions={expressions}
+              goals={goals}
+              history={history}
+              onGoalsChange={setGoals}
+            />
           )}
         </section>
 
@@ -441,6 +466,13 @@ function App() {
           <div className="stat">
             <strong>{reviewCount}</strong>
             <span>待复习错误</span>
+          </div>
+          <div className="goal-card">
+            <div>
+              <strong>{Math.min(todayProgress, goals.dailyTarget)}</strong>
+              <span>/ {goals.dailyTarget} 今日目标</span>
+            </div>
+            <progress max={goals.dailyTarget} value={Math.min(todayProgress, goals.dailyTarget)} />
           </div>
           <section>
             <div className="section-title-row">
@@ -576,6 +608,19 @@ function formatDate(value) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function countTodayItems(items) {
+  const todayKey = toDateKey(new Date());
+  return items.filter((item) => toDateKey(item.createdAt ? new Date(item.createdAt) : new Date()) === todayKey).length;
+}
+
+function toDateKey(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
 }
 
 export default App;
