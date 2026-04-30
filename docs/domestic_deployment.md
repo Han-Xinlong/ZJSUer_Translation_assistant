@@ -207,7 +207,9 @@ http://服务器公网IP/
 http://服务器公网IP/api/status
 ```
 
-### 4.6.1 Docker Hub 拉取超时
+### 4.6 常见部署问题
+
+#### 4.6.1 Docker Hub 拉取超时
 
 如果启动时看到类似错误：
 
@@ -242,7 +244,58 @@ docker compose -f docker-compose.tencent.yml up --build -d
 
 如果镜像加速仍不可用，可以临时多执行一次 `docker pull nginx:1.27-alpine`、`docker pull python:3.11-slim`、`docker pull node:20-alpine` 观察具体哪个基础镜像超时。
 
-### 4.6 一键冒烟检查
+#### 4.6.2 pip 安装依赖过慢或失败
+
+如果后端镜像构建卡在：
+
+```text
+RUN pip install --no-cache-dir -r requirements.txt
+```
+
+优先确认 `backend/Dockerfile` 中包含腾讯云 PyPI 镜像：
+
+```bash
+grep PIP_INDEX_URL backend/Dockerfile
+```
+
+应看到：
+
+```text
+ARG PIP_INDEX_URL=https://mirrors.cloud.tencent.com/pypi/simple
+ENV PIP_INDEX_URL=$PIP_INDEX_URL
+```
+
+如果服务器暂时无法 `git pull`，可以临时在服务器上补入：
+
+```bash
+sed -i '/ENV PYTHONUNBUFFERED=1/a ARG PIP_INDEX_URL=https://mirrors.cloud.tencent.com/pypi/simple\nENV PIP_INDEX_URL=$PIP_INDEX_URL' backend/Dockerfile
+```
+
+然后重新构建后端：
+
+```bash
+docker compose -f docker-compose.tencent.yml build --no-cache --progress=plain backend
+```
+
+#### 4.6.3 页面能打开但点击翻译报错
+
+先确认后端接口是否正常：
+
+```bash
+curl -i http://服务器公网IP/api/health
+curl -i http://服务器公网IP/api/status
+curl -i http://服务器公网IP/api/translate \
+  -H 'Content-Type: application/json' \
+  --data '{"text":"你好，世界","target_language":"English","mode":"quick"}'
+```
+
+如果 `POST /api/translate` 返回 `200`，但页面按钮仍报错，可能是前端运行在普通 `http://公网IP` 下，浏览器不支持安全上下文限定的 API。项目已用兼容 ID 生成函数替代直接调用 `crypto.randomUUID()`，修复后需要重新构建前端容器：
+
+```bash
+docker compose -f docker-compose.tencent.yml up --build -d frontend gateway
+```
+
+### 4.7 一键冒烟检查
 
 仓库提供了检查脚本：
 
@@ -258,7 +311,7 @@ bash scripts/check_domestic_deploy.sh http://服务器公网IP
 Domestic deployment smoke check passed.
 ```
 
-### 4.7 更新部署
+### 4.8 更新部署
 
 以后改完代码并推送后，服务器执行：
 
@@ -267,13 +320,13 @@ git pull
 docker compose -f docker-compose.tencent.yml up --build -d
 ```
 
-### 4.8 停止服务
+### 4.9 停止服务
 
 ```bash
 docker compose -f docker-compose.tencent.yml down
 ```
 
-### 4.9 如果已有域名
+### 4.10 如果已有域名
 
 备案和解析完成后，把域名 A 记录指向服务器公网 IP，例如：
 

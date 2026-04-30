@@ -7,6 +7,7 @@ import {
   GOALS_KEY,
   HISTORY_KEY,
   clearAppStorage,
+  createRecordId,
   loadCollection,
   loadObject,
   saveCollection,
@@ -103,5 +104,12 @@ describe("storage utilities", () => {
 
     expect(saveUniqueItem(first, "useful expression", "测试来源")).toBe(first);
     expect(saveUniqueItem(first, "   ", "测试来源")).toBe(first);
+  });
+
+  it("creates fallback ids when randomUUID is unavailable", () => {
+    global.crypto = {};
+    vi.spyOn(Math, "random").mockReturnValue(0.123456789);
+
+    expect(createRecordId("history")).toMatch(/^history-/);
   });
 });

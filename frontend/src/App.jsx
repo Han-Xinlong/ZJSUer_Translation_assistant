@@ -26,6 +26,7 @@ import {
   GOALS_KEY,
   HISTORY_KEY,
   clearAppStorage,
+  createRecordId,
   loadCollection,
   loadObject,
   saveCollection,
@@ -169,7 +170,7 @@ function App() {
         mode
       });
       const historyItem = {
-        id: crypto.randomUUID(),
+        id: createRecordId("history"),
         type: mode === "deep" ? "深度翻译" : "快速翻译",
         text: result.translation,
         sourceText: trimmedText,
@@ -203,7 +204,7 @@ function App() {
         target_language: targetLanguage
       });
       const historyItem = {
-        id: crypto.randomUUID(),
+        id: createRecordId("history"),
         type: "润色",
         text: result.polished_text,
         sourceText: trimmedText,
@@ -328,7 +329,7 @@ function App() {
     }
     setCommunityPosts((items) => [
       {
-        id: crypto.randomUUID(),
+        id: createRecordId("community"),
         text: normalized,
         source,
         createdAt: new Date().toISOString()

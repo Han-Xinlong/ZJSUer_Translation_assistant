@@ -1289,3 +1289,168 @@ mock 翻译返回示例：
 4. 重新部署后端。
 5. 打开前端，确认右侧 AI 服务状态从“演示模式”变成“真实模型”。
 6. 用少量样例测试快速翻译、深度翻译和润色，评估输出质量、速度和费用。
+
+## 20. 2026-04-30 腾讯云国内部署记录
+
+本轮继续推进腾讯云轻量应用服务器部署，服务器公网 IP：
+
+```text
+62.234.13.61
+```
+
+### 20.1 Docker 环境
+
+用户在服务器上确认：
+
+```text
+Docker version 29.1.3
+Docker Compose version 2.40.3
+```
+
+初始 `docker ps` 为空，说明服务器上没有旧容器干扰。
+
+### 20.2 国内镜像与构建问题
+
+首次执行：
+
+```bash
+docker compose -f docker-compose.tencent.yml up --build -d
+```
+
+遇到 Docker Hub 超时，无法拉取 `nginx:1.27-alpine`：
+
+```text
+failed to resolve reference "docker.io/library/nginx:1.27-alpine"
+dial tcp ...:443: i/o timeout
+```
+
+已指导用户配置腾讯云 Docker 镜像加速：
+
+```json
+{
+  "registry-mirrors": [
+    "https://mirror.ccs.tencentyun.com"
+  ]
+}
+```
+
+用户执行 `docker info | grep -A 5 "Registry Mirrors"` 后确认镜像源生效。
+
+随后后端镜像构建卡在 `pip install -r requirements.txt`。本地已修改并推送：
+
+- `backend/Dockerfile`
+
+新增默认腾讯云 PyPI 镜像：
+
+```dockerfile
+ARG PIP_INDEX_URL=https://mirrors.cloud.tencent.com/pypi/simple
+ENV PIP_INDEX_URL=$PIP_INDEX_URL
+```
+
+对应提交：
+
+```text
+0682a95 chore: use domestic pip mirror in docker build
+```
+
+由于服务器访问 GitHub 偶发失败：
+
+```text
+GnuTLS recv error (-110): The TLS connection was non-properly terminated
+```
+
+曾指导用户先在服务器用 `sed` 临时补入 `PIP_INDEX_URL`，绕过 `git pull` 网络问题。
+
+### 20.3 腾讯云容器已启动
+
+用户最终启动成功，Compose 状态显示：
+
+```text
+backend   Built / Up / healthy
+frontend  Built / Up
+gateway   Started / 0.0.0.0:80->80/tcp
+```
+
+公网接口验证通过：
+
+```bash
+curl -i http://62.234.13.61/api/health
+curl -i http://62.234.13.61/api/status
+```
+
+返回：
+
+```json
+{"status":"ok"}
+{"status":"ok","provider":"mock","model":"mock","configured":true,"message":"Mock provider is active. No API key is required."}
+```
+
+用户确认浏览器可打开：
+
+```text
+http://62.234.13.61/
+```
+
+### 20.4 翻译按钮报错定位
+
+用户反馈页面可打开，但点击“翻译”按钮报错。
+
+从本地直接请求公网后端：
+
+```bash
+curl -i http://62.234.13.61/api/translate \
+  -H 'Content-Type: application/json' \
+  --data '{"text":"你好，世界","target_language":"English","mode":"quick"}'
+```
+
+返回 `200 OK`，mock 翻译正常：
+
+```json
+{
+  "mode": "quick",
+  "translation": "[Quick translation placeholder] 你好，世界",
+  "provider": "mock"
+}
+```
+
+因此判断后端和 Nginx 网关无问题，前端按钮错误很可能发生在响应返回之后。
+
+定位到前端有多处直接使用：
+
+```js
+crypto.randomUUID()
+```
+
+该 API 在普通 `http://公网IP` 页面中可能不可用，因为它受浏览器安全上下文限制。已修复为统一 ID 工具：
+
+- `frontend/src/utils/storage.js` 新增 `createRecordId(prefix)`。
+- 支持 `crypto.randomUUID()` 时继续使用原生 UUID。
+- 不支持时使用时间戳 + 随机数生成兼容 ID。
+- `frontend/src/App.jsx` 和 `saveUniqueItem` 改用 `createRecordId`。
+- `frontend/src/utils/storage.test.js` 增加 fallback 单元测试。
+
+验证通过：
+
+```bash
+npm --prefix frontend test -- --run
+npm --prefix frontend run build
+python3 -m compileall backend/app
+```
+
+结果：
+
+- 前端 Vitest：4 个测试文件，15 个测试用例全部通过。
+- 前端生产构建通过。
+- 后端 Python 编译通过。
+
+### 20.5 下一步
+
+需要把本轮前端兼容性修复推送到远端，然后让服务器更新并重建前端：
+
+```bash
+git pull --ff-only
+# 如果 GitHub 暂时不可访问，可稍后重试，或采用本地打包/手动同步方式。
+docker compose -f docker-compose.tencent.yml up --build -d frontend gateway
+```
+
+修复部署后，再在浏览器访问 `http://62.234.13.61/`，点击“翻译”确认结果是否能显示并写入历史记录。
