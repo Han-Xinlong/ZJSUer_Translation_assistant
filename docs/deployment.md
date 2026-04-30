@@ -9,6 +9,8 @@
 这样可以先获得一个可访问的 Web Demo，不需要立刻购买服务器，也不需要维护 Nginx、HTTPS、进程守护和安全组。
 
 > 如果 Render 要求绑定 Visa 卡，可以直接跳过 Render，使用本文的 Vercel 后端方案。
+>
+> 如果目标用户主要在中国大陆网络环境，`.vercel.app` 访问可能不稳定。面向评审、同学和长期试用时，建议同时准备 [国内可靠访问部署方案](domestic_deployment.md)。
 
 当前已上线的内部测试地址：
 
@@ -337,3 +339,7 @@ c87bec9 fix: normalize frontend api base url
 - 需要更严格的数据隐私与访问控制。
 
 在此之前，Vercel + Render 更适合当前项目阶段。
+
+如果已经确定要面向国内网络稳定开放，优先阅读：
+
+- [国内可靠访问部署方案](domestic_deployment.md)

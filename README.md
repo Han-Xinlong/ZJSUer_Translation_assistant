@@ -157,6 +157,7 @@ ZJSUer_Translation_assistant/
 ├── docs/                  # 项目文档、架构说明、路线规划
 ├── frontend/              # React + Vite 前端应用
 ├── backend/               # FastAPI 后端服务
+├── deploy/                # 部署相关配置，如 Nginx 静态站点配置
 ├── prompts/               # AI Prompt 模板
 ├── datasets/              # 示例语料与测试数据
 └── scripts/               # 本地开发脚本
@@ -244,6 +245,17 @@ python3 -m compileall backend/app
 详细步骤见：
 
 - [线上部署指南](docs/deployment.md)
+
+如果要面向国内用户、校园网和评审老师提供更可靠访问，建议准备国内镜像部署：
+
+- 前端部署到国内静态托管或 CDN。
+- 当前推荐先使用腾讯云轻量服务器，通过 `docker-compose.tencent.yml` 单入口部署前端、后端和 Nginx 网关。
+- 后端 FastAPI 通过 Docker 部署到国内云服务器，用户访问同源 `/api/...`。
+- 国内正式域名通常需要 ICP 备案。
+
+详细方案见：
+
+- [国内可靠访问部署方案](docs/domestic_deployment.md)
 
 ### 启用真实 AI 调用
 
