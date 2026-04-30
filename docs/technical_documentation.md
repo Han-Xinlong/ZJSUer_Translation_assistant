@@ -724,6 +724,13 @@ cd backend && .venv/bin/python -m pytest
 python3 -m compileall backend/app
 ```
 
+仓库已配置 GitHub Actions：
+
+- 工作流文件：`.github/workflows/ci.yml`
+- 触发时机：push 到 `main`、Pull Request。
+- 前端 Job：Node 18、`npm ci`、`npm test`、`npm run build`。
+- 后端 Job：Python 3.10、安装 `backend/requirements-dev.txt`、`pytest`、`python -m compileall app`。
+
 当前前端单元测试使用 Vitest，已覆盖：
 
 - `frontend/src/utils/date.js`：日期 key、缺省日期展示、今日条目统计。

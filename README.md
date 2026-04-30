@@ -228,6 +228,11 @@ cd backend && .venv/bin/python -m pytest
 python3 -m compileall backend/app
 ```
 
+远端仓库已配置 GitHub Actions。每次 push 到 `main` 或创建 Pull Request 时，会自动执行：
+
+- 前端：`npm ci`、`npm test`、`npm run build`
+- 后端：安装 `requirements-dev.txt`、`pytest`、`python -m compileall app`
+
 ### 启用真实 AI 调用
 
 后端默认使用 `mock` 模式，便于无密钥演示。若要接入 OpenAI：
