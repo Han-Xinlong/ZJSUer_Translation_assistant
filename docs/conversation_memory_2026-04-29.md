@@ -567,3 +567,95 @@ python3 -m compileall backend/app
 
 1. 增加 Vitest，优先测试 `utils/date.js`、`utils/report.js`、`utils/storage.js`。
 2. 增加后端 `/api/status` 或前端健康状态条，让用户清楚当前使用的是 mock provider 还是真实 AI provider。
+
+## 13. 2026-04-30 前端单元测试记录
+
+用户继续要求以资深全栈工程师和 AI 工程师身份推进项目。本轮根据上一轮建议，补上前端工具函数单元测试。
+
+### 13.1 测试依赖
+
+新增前端测试框架：
+
+- `vitest@0.34.6`
+
+选择该版本的原因：
+
+- 当前本机 Node.js 为 `16.5.0`。
+- Vitest 1.x 对 Node 版本要求更高，会产生明显引擎警告。
+- `0.34.6` 能复用项目已有 `vite@4.5.3`，更适合当前环境。
+
+新增脚本：
+
+```bash
+npm --prefix frontend test
+```
+
+### 13.2 测试覆盖
+
+新增测试文件：
+
+- `frontend/src/utils/date.test.js`
+- `frontend/src/utils/report.test.js`
+- `frontend/src/utils/storage.test.js`
+
+覆盖内容：
+
+- `date.js`
+  - `toDateKey`
+  - `formatDate` 缺省值
+  - `countTodayItems`
+
+- `report.js`
+  - Markdown 学习报告标题。
+  - 历史记录、表达收藏、错题沉淀、社群分享、今日目标统计。
+  - 最近练习、最近表达、最近错题。
+  - 空状态下的“暂无记录”。
+
+- `storage.js`
+  - localStorage 集合读写。
+  - localStorage 对象读写。
+  - 非法 JSON fallback。
+  - 非预期数据结构 fallback。
+  - 只清理项目自身 storage keys。
+  - `saveUniqueItem` 的 trim、去重和空值保护。
+
+### 13.3 文档同步
+
+更新：
+
+- `frontend/README.md`
+- `docs/technical_documentation.md`
+
+技术文档中新增测试命令，并将“缺少自动化测试”调整为“浏览器交互测试不足”。
+
+### 13.4 验证结果
+
+已验证：
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+python3 -m compileall backend/app
+npm --prefix frontend audit --omit=dev
+```
+
+结果：
+
+- Vitest：3 个测试文件，11 个测试用例全部通过。
+- 前端生产构建通过。
+- 后端 Python 语法检查通过。
+- 生产依赖审计：0 vulnerabilities。
+
+对应提交：
+
+```text
+534ba48 test: add frontend utility coverage
+```
+
+### 13.5 下一步建议
+
+继续打磨时，优先级建议：
+
+1. 增加后端 `/api/status`，暴露 provider、model、mock/openai 状态。
+2. 前端右侧或顶部展示当前 AI 服务状态，降低同学试用时的困惑。
+3. 再往后增加 Playwright，覆盖“载入演示数据 -> 学习档案 -> 导出报告”等关键交互链路。
