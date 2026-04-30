@@ -1067,3 +1067,91 @@ cc07acb chore: add managed deployment setup
 4. 设置 `VITE_API_BASE_URL` 为 Render 后端 URL。
 5. 拿到 Vercel 前端 URL 后，回 Render 设置 `ALLOWED_ORIGINS`。
 6. 打开线上前端，完成一轮内部测试演示链路。
+
+## 18. 2026-04-30 部署平台切换记录
+
+用户在尝试 Render Blueprint 时发现没有 Visa 卡，Render 创建服务受阻。参赛导师判断：当前阶段不应因为 Render 卡片要求而购买服务器，改为使用 Vercel 同时部署前端和后端。
+
+新决策：
+
+- 前端：Vercel。
+- 后端：Vercel FastAPI。
+- Render：保留为后续备选方案。
+- 服务器：暂不购买。
+
+### 18.1 新增 Vercel 后端入口
+
+新增：
+
+- `backend/server.py`
+
+内容：
+
+```python
+from app.main import app
+```
+
+用途：
+
+- 暴露 FastAPI `app` 给 Vercel Python Runtime。
+- 让后端可以作为独立 Vercel 项目部署。
+
+### 18.2 更新部署文档
+
+更新：
+
+- `docs/deployment.md`
+- `README.md`
+- `docs/technical_documentation.md`
+
+部署顺序调整为：
+
+1. 先在 Vercel 创建后端项目，Root Directory 选择 `backend`。
+2. 拿到后端地址，例如 `https://your-backend-project.vercel.app`。
+3. 再在 Vercel 创建前端项目，Root Directory 选择 `frontend`。
+4. 前端设置 `VITE_API_BASE_URL=https://your-backend-project.vercel.app`。
+5. 前端部署完成后，回到后端项目设置 `ALLOWED_ORIGINS=["https://your-frontend-project.vercel.app"]`。
+
+### 18.3 保留 Render 备选
+
+`render.yaml` 仍保留在仓库中，后续如果有 Visa 卡或需要传统长驻 Web Service，可以继续用 Render。
+
+### 18.4 验证结果
+
+已验证：
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+cd backend && .venv/bin/python -m pytest
+python3 -m compileall backend/app backend/server.py
+```
+
+结果：
+
+- 前端 Vitest：4 个测试文件，13 个测试用例全部通过。
+- 后端 pytest：6 个测试用例全部通过。
+- 前端生产构建通过。
+- `backend/server.py` 可编译。
+
+对应提交：
+
+```text
+74317cc chore: switch deployment guide to vercel backend
+```
+
+### 18.5 下一步建议
+
+下一步需要用户在 Vercel 上实际创建两个项目：
+
+- 后端项目：Root Directory = `backend`。
+- 前端项目：Root Directory = `frontend`。
+
+用户拿到两个线上 URL 后，继续检查：
+
+- `/api/health`
+- `/api/status`
+- 前端右侧 AI 状态卡
+- 翻译 mock 流程
+- 载入演示数据
+- 导出报告
