@@ -1492,3 +1492,42 @@ location / {
 ```
 
 目的：以后访问根路径 `/` 时，浏览器会重新获取最新入口 HTML，从而加载最新 hash 文件名的前端 JS；无需再使用 `?v=...` 参数。
+
+## 22. 2026-04-30 腾讯云部署最终验证成功
+
+用户反馈：在浏览器中直接访问正式地址：
+
+```text
+http://62.234.13.61/
+```
+
+已经可以正常打开前端页面，并且点击“翻译”按钮可以正常返回结果。
+
+这意味着腾讯云国内部署第一阶段已跑通：
+
+- gateway：Nginx 对外暴露 `80` 端口。
+- frontend：Nginx 静态前端容器正常服务。
+- backend：FastAPI 容器健康检查为 healthy。
+- `/api/health` 和 `/api/status` 可通过公网访问。
+- 前端同源请求 `/api/translate` 正常。
+- 普通 `http://公网IP` 场景下的 `crypto.randomUUID()` 兼容问题已通过 `createRecordId()` 解决。
+- `?v=local-fix-1` 仅作为临时缓存绕过参数使用，现在不再需要。
+
+当前正式国内体验地址：
+
+```text
+http://62.234.13.61/
+```
+
+当前 AI 模式仍为：
+
+```env
+AI_PROVIDER=mock
+```
+
+适合用于大创答辩、同学试用和国内访问稳定性展示。后续如接入真实模型，需要在服务器 `deploy/tencent.env` 中配置真实 provider 和 API Key，然后重建后端容器。
+
+本轮同步更新：
+
+- `docs/domestic_deployment.md`：增加“当前腾讯云验证结果”。
+- `docs/conversation_memory_2026-04-29.md`：记录最终验证成功状态。
