@@ -720,6 +720,7 @@ http://127.0.0.1:5173/
 ```bash
 npm --prefix frontend test
 npm --prefix frontend run build
+cd backend && .venv/bin/python -m pytest
 python3 -m compileall backend/app
 ```
 
@@ -728,6 +729,15 @@ python3 -m compileall backend/app
 - `frontend/src/utils/date.js`：日期 key、缺省日期展示、今日条目统计。
 - `frontend/src/utils/report.js`：Markdown 学习报告的统计字段、最近记录和空状态。
 - `frontend/src/utils/storage.js`：localStorage 读写、异常 fallback、项目数据清空、表达去重。
+
+当前后端单元测试使用 pytest，已覆盖：
+
+- `GET /api/health`：基础健康检查。
+- `GET /api/status`：mock provider 状态。
+- `POST /api/translate`：mock 快速翻译。
+- `POST /api/translate`：mock 深度翻译与 prompt 链。
+- `POST /api/polish`：mock 润色。
+- 请求校验：空文本返回 422。
 
 ## 9. 当前限制
 

@@ -219,6 +219,15 @@ bash scripts/dev_frontend.sh
 
 > 当前仓库处于从 0 到 1 的初始化阶段，已完成基础目录、前端工作台雏形、FastAPI 服务骨架和 Prompt 模板占位。后续将继续补充真实模型调用、富文本编辑、本地学习数据存储和可视化能力。
 
+### 验证项目
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+cd backend && .venv/bin/python -m pytest
+python3 -m compileall backend/app
+```
+
 ### 启用真实 AI 调用
 
 后端默认使用 `mock` 模式，便于无密钥演示。若要接入 OpenAI：

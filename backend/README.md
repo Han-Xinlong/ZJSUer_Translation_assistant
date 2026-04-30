@@ -49,3 +49,12 @@ OPENAI_MODEL=gpt-5-mini
 ```
 
 The current OpenAI integration uses the Responses API and asks the model to return strict JSON for translation and polishing workflows.
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+The current pytest suite covers `/api/health`, `/api/status`, mock translation, mock deep translation, mock polishing and request validation.
