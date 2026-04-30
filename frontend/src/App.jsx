@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  BookOpen,
-  BrainCircuit,
-  Database,
-  Download,
-  Maximize2,
-  Languages,
-  Loader2,
-  Mic,
-  RotateCcw,
-  Send,
-  Sparkles
-} from "lucide-react";
 
 import { polish, translate } from "./api/client.js";
+import CollectionView from "./components/CollectionView.jsx";
+import CommunityView from "./components/CommunityView.jsx";
+import HistoryDetail from "./components/HistoryDetail.jsx";
+import InsightPanel from "./components/InsightPanel.jsx";
 import LearningDashboard from "./components/LearningDashboard.jsx";
+import Sidebar from "./components/Sidebar.jsx";
+import WorkspaceView from "./components/WorkspaceView.jsx";
 import { corpusExamples } from "./data/corpus.js";
 import {
   demoCommunityPosts,
@@ -24,6 +17,8 @@ import {
   demoHistory
 } from "./data/demoLearning.js";
 import { sampleHistory } from "./data/mockHistory.js";
+import { countTodayItems, toDateKey } from "./utils/date.js";
+import { buildLearningReport } from "./utils/report.js";
 import {
   COMMUNITY_KEY,
   ERRORS_KEY,
@@ -41,29 +36,6 @@ import {
 const DEFAULT_GOALS = {
   dailyTarget: 3
 };
-
-const features = [
-  {
-    icon: Mic,
-    title: "智能输入",
-    text: "文本与语音输入，支持沉浸式写作。"
-  },
-  {
-    icon: Languages,
-    title: "随写随翻",
-    text: "快速模式秒查，深度模式执行初译与审校。"
-  },
-  {
-    icon: Sparkles,
-    title: "随写随修",
-    text: "语法纠错、表达优化，并解释修改原因。"
-  },
-  {
-    icon: BrainCircuit,
-    title: "成长可视",
-    text: "沉淀错题库、表达库和学习轨迹。"
-  }
-];
 
 function App() {
   const [sourceText, setSourceText] = useState("今天我想练习一段关于校园学习生活的英文表达。");
@@ -288,14 +260,6 @@ function App() {
     setErrors((items) => saveUniqueItem(items, text, source));
   }
 
-  function handleRemoveExpression(id) {
-    setExpressions((items) => items.filter((item) => item.id !== id));
-  }
-
-  function handleRemoveError(id) {
-    setErrors((items) => items.filter((item) => item.id !== id));
-  }
-
   function handleVoiceInput() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -341,68 +305,10 @@ function App() {
     setActiveView("community");
   }
 
-  function handleRemoveCommunityPost(id) {
-    setCommunityPosts((items) => items.filter((item) => item.id !== id));
-  }
-
   return (
     <main className="app-shell">
       <section className="workspace">
-        <aside className="sidebar" aria-label="学习记录">
-          <div className="brand">
-            <BookOpen size={24} aria-hidden="true" />
-            <div>
-              <strong>ZJSUer</strong>
-              <span>AI Translation</span>
-            </div>
-          </div>
-
-          <nav className="nav-list">
-            <button
-              className={activeView === "workspace" ? "nav-item active" : "nav-item"}
-              onClick={() => setActiveView("workspace")}
-              type="button"
-            >
-              写作台
-            </button>
-            <button
-              className={activeView === "expressions" ? "nav-item active" : "nav-item"}
-              onClick={() => setActiveView("expressions")}
-              type="button"
-            >
-              表达库
-            </button>
-            <button
-              className={activeView === "errors" ? "nav-item active" : "nav-item"}
-              onClick={() => setActiveView("errors")}
-              type="button"
-            >
-              错题库
-            </button>
-            <button
-              className={activeView === "history" ? "nav-item active" : "nav-item"}
-              disabled={history.length === 0}
-              onClick={() => setActiveView("history")}
-              type="button"
-            >
-              历史详情
-            </button>
-            <button
-              className={activeView === "profile" ? "nav-item active" : "nav-item"}
-              onClick={() => setActiveView("profile")}
-              type="button"
-            >
-              学习档案
-            </button>
-            <button
-              className={activeView === "community" ? "nav-item active" : "nav-item"}
-              onClick={() => setActiveView("community")}
-              type="button"
-            >
-              社群互学
-            </button>
-          </nav>
-        </aside>
+        <Sidebar activeView={activeView} hasHistory={history.length > 0} onViewChange={setActiveView} />
 
         <section className="editor-panel" aria-label="随写随翻工作区">
           <header className="panel-header">
@@ -429,173 +335,36 @@ function App() {
           </header>
 
           {activeView === "workspace" && (
-            <>
-              <div className="toolbar" aria-label="工作台操作">
-                <label>
-                  <span>目标语言</span>
-                  <select value={targetLanguage} onChange={(event) => setTargetLanguage(event.target.value)}>
-                    <option value="English">English</option>
-                    <option value="Japanese">Japanese</option>
-                    <option value="Korean">Korean</option>
-                    <option value="Chinese">Chinese</option>
-                  </select>
-                </label>
-                <button className="primary-action" disabled={!canSubmit} onClick={handleTranslate} type="button">
-                  {activeAction === "translate" ? <Loader2 className="spin" size={18} /> : <Send size={18} />}
-                  翻译
-                </button>
-                <button className="secondary-action" disabled={!canSubmit} onClick={handlePolish} type="button">
-                  {activeAction === "polish" ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
-                  润色
-                </button>
-                <button className="secondary-action" disabled={isListening} onClick={handleVoiceInput} type="button">
-                  {isListening ? <Loader2 className="spin" size={18} /> : <Mic size={18} />}
-                  语音
-                </button>
-                <button className="secondary-action" onClick={() => setIsImmersive((value) => !value)} type="button">
-                  <Maximize2 size={18} />
-                  {isImmersive ? "退出沉浸" : "沉浸"}
-                </button>
-              </div>
-
-              {errorMessage && <p className="error-message">{errorMessage}</p>}
-
-              <label className="context-box">
-                <span>语境说明</span>
-                <input
-                  onChange={(event) => setContextText(event.target.value)}
-                  placeholder="例如：课程作业、正式邮件、校园生活分享..."
-                  value={contextText}
-                />
-              </label>
-
-              <div className={isImmersive ? "writing-grid immersive" : "writing-grid"}>
-                <label className="writing-box">
-                  <span>原文输入</span>
-                  <textarea
-                    onChange={(event) => setSourceText(event.target.value)}
-                    placeholder="输入你想翻译或润色的外语学习文本..."
-                    value={sourceText}
-                  />
-                </label>
-
-                <section className="result-box" aria-label="AI 输出">
-                  <span>AI 输出</span>
-                  {translationResult || polishResult ? (
-                    <div className="result-stack">
-                      {translationResult && (
-                        <article className="result-section">
-                          <h2>{translationResult.mode === "deep" ? "深度翻译" : "快速翻译"}</h2>
-                          <p className="provider-note">
-                            {translationResult.provider}
-                            {translationResult.model ? ` / ${translationResult.model}` : ""}
-                          </p>
-                          <p>{translationResult.translation}</p>
-                          <button
-                            className="inline-save"
-                            type="button"
-                            onClick={() => handleSaveExpression(translationResult.translation, "译文")}
-                          >
-                            收藏表达
-                          </button>
-                          <button
-                            className="inline-save"
-                            type="button"
-                            onClick={() => handleShareToCommunity(translationResult.translation, "译文分享")}
-                          >
-                            分享社群
-                          </button>
-                          {translationResult.review && (
-                            <div className="review-note">
-                              <p>{translationResult.review}</p>
-                              <button type="button" onClick={() => handleSaveError(translationResult.review, "审校说明")}>
-                                加入错题
-                              </button>
-                            </div>
-                          )}
-                          {translationResult.suggestions.length > 0 && (
-                            <ul className="learning-list">
-                              {translationResult.suggestions.map((item) => (
-                                <li key={item}>
-                                  <span>{item}</span>
-                                  <button type="button" onClick={() => handleSaveExpression(item, "翻译建议")}>
-                                    收藏
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </article>
-                      )}
-
-                      {polishResult && (
-                        <article className="result-section">
-                          <h2>润色版本</h2>
-                          <p className="provider-note">
-                            {polishResult.provider}
-                            {polishResult.model ? ` / ${polishResult.model}` : ""}
-                          </p>
-                          <p>{polishResult.polished_text}</p>
-                          <button
-                            className="inline-save"
-                            type="button"
-                            onClick={() => handleSaveExpression(polishResult.polished_text, "润色版本")}
-                          >
-                            收藏表达
-                          </button>
-                          <button
-                            className="inline-save"
-                            type="button"
-                            onClick={() => handleShareToCommunity(polishResult.polished_text, "润色分享")}
-                          >
-                            分享社群
-                          </button>
-                          {polishResult.changes.length > 0 && (
-                            <ul className="learning-list">
-                              {polishResult.changes.map((item) => (
-                                <li key={item}>
-                                  <span>{item}</span>
-                                  <button type="button" onClick={() => handleSaveError(item, "润色修改")}>
-                                    加入错题
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </article>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="empty-state">
-                      <Languages size={28} aria-hidden="true" />
-                      <p>选择模式后点击翻译或润色，AI 结果会显示在这里。</p>
-                    </div>
-                  )}
-                </section>
-              </div>
-
-              <div className="feature-grid">
-                {features.map((feature) => {
-                  const Icon = feature.icon;
-                  return (
-                    <article className="feature-card" key={feature.title}>
-                      <Icon size={22} aria-hidden="true" />
-                      <h2>{feature.title}</h2>
-                      <p>{feature.text}</p>
-                    </article>
-                  );
-                })}
-              </div>
-
-              <CorpusPanel items={corpusRecommendations} onSaveExpression={handleSaveExpression} />
-            </>
+            <WorkspaceView
+              activeAction={activeAction}
+              canSubmit={canSubmit}
+              contextText={contextText}
+              corpusRecommendations={corpusRecommendations}
+              errorMessage={errorMessage}
+              isImmersive={isImmersive}
+              isListening={isListening}
+              onContextChange={setContextText}
+              onPolish={handlePolish}
+              onSaveError={handleSaveError}
+              onSaveExpression={handleSaveExpression}
+              onShareToCommunity={handleShareToCommunity}
+              onSourceTextChange={setSourceText}
+              onTargetLanguageChange={setTargetLanguage}
+              onToggleImmersive={() => setIsImmersive((value) => !value)}
+              onTranslate={handleTranslate}
+              onVoiceInput={handleVoiceInput}
+              polishResult={polishResult}
+              sourceText={sourceText}
+              targetLanguage={targetLanguage}
+              translationResult={translationResult}
+            />
           )}
 
           {activeView === "expressions" && (
             <CollectionView
               emptyText="还没有收藏表达。回到写作台，把译文或建议收入表达库。"
               items={expressions}
-              onRemove={handleRemoveExpression}
+              onRemove={(id) => setExpressions((items) => items.filter((item) => item.id !== id))}
               title="表达库"
             />
           )}
@@ -604,7 +373,7 @@ function App() {
             <CollectionView
               emptyText="还没有错题。把审校说明和润色修改加入错题库后，会在这里集中复习。"
               items={errors}
-              onRemove={handleRemoveError}
+              onRemove={(id) => setErrors((items) => items.filter((item) => item.id !== id))}
               title="错题库"
             />
           )}
@@ -629,290 +398,28 @@ function App() {
           )}
 
           {activeView === "community" && (
-            <CommunityView items={communityPosts} onRemove={handleRemoveCommunityPost} />
+            <CommunityView
+              items={communityPosts}
+              onRemove={(id) => setCommunityPosts((items) => items.filter((item) => item.id !== id))}
+            />
           )}
         </section>
 
-        <aside className="insight-panel" aria-label="成长概览">
-          <h2>今日复盘</h2>
-          <div className="stat">
-            <strong>{expressionCount}</strong>
-            <span>累计表达</span>
-          </div>
-          <div className="stat">
-            <strong>{reviewCount}</strong>
-            <span>待复习错误</span>
-          </div>
-          <div className="goal-card">
-            <div>
-              <strong>{Math.min(todayProgress, goals.dailyTarget)}</strong>
-              <span>/ {goals.dailyTarget} 今日目标</span>
-            </div>
-            <progress max={goals.dailyTarget} value={Math.min(todayProgress, goals.dailyTarget)} />
-          </div>
-          <section>
-            <div className="section-title-row">
-              <h3>最近记录</h3>
-              <button type="button" onClick={handleClearHistory}>清空</button>
-            </div>
-            <ul className="history-list">
-              {recentHistory.map((item) => (
-                <li key={item.id}>
-                  <button type="button" onClick={() => handleLoadHistory(item)}>
-                    <span>{item.type}</span>
-                    <p>{item.text}</p>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="demo-tools" aria-label="演示工具">
-            <h3>演示工具</h3>
-            <button type="button" onClick={handleExportReport}>
-              <Download size={16} aria-hidden="true" />
-              导出报告
-            </button>
-            <button type="button" onClick={handleLoadDemoData}>
-              <Database size={16} aria-hidden="true" />
-              载入演示数据
-            </button>
-            <button type="button" onClick={handleClearAllLearningData}>
-              <RotateCcw size={16} aria-hidden="true" />
-              清空全部数据
-            </button>
-          </section>
-        </aside>
+        <InsightPanel
+          expressionCount={expressionCount}
+          goals={goals}
+          onClearAllLearningData={handleClearAllLearningData}
+          onClearHistory={handleClearHistory}
+          onExportReport={handleExportReport}
+          onLoadDemoData={handleLoadDemoData}
+          onLoadHistory={handleLoadHistory}
+          recentHistory={recentHistory}
+          reviewCount={reviewCount}
+          todayProgress={todayProgress}
+        />
       </section>
     </main>
   );
-}
-
-function CollectionView({ emptyText, items, onRemove, title }) {
-  return (
-    <section className="collection-panel">
-      <h2>{title}</h2>
-      {items.length === 0 ? (
-        <div className="empty-state">
-          <BookOpen size={28} aria-hidden="true" />
-          <p>{emptyText}</p>
-        </div>
-      ) : (
-        <ul className="collection-list">
-          {items.map((item) => (
-            <li key={item.id}>
-              <span>{item.source}</span>
-              <p>{item.text}</p>
-              <button type="button" onClick={() => onRemove(item.id)}>移除</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-function CorpusPanel({ items, onSaveExpression }) {
-  const visibleItems = items.length > 0 ? items : corpusExamples.slice(0, 3);
-
-  return (
-    <section className="corpus-panel">
-      <h2>推荐语料</h2>
-      <div className="corpus-grid">
-        {visibleItems.map((item) => (
-          <article key={item.id}>
-            <span>{item.title}</span>
-            <p>{item.expression}</p>
-            <small>{item.note}</small>
-            <button type="button" onClick={() => onSaveExpression(item.expression, "推荐语料")}>
-              收藏表达
-            </button>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CommunityView({ items, onRemove }) {
-  return (
-    <section className="collection-panel">
-      <h2>社群互学</h2>
-      {items.length === 0 ? (
-        <div className="empty-state">
-          <Languages size={28} aria-hidden="true" />
-          <p>还没有共享内容。在写作台把译文或润色版本分享到社群，积累可互学的语料。</p>
-        </div>
-      ) : (
-        <ul className="community-list">
-          {items.map((item) => (
-            <li key={item.id}>
-              <div>
-                <span>{item.source}</span>
-                <small>{formatDate(item.createdAt)}</small>
-              </div>
-              <p>{item.text}</p>
-              <button type="button" onClick={() => onRemove(item.id)}>移除</button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-function HistoryDetail({ item, onSaveError, onSaveExpression, onStartRewrite }) {
-  if (!item) {
-    return (
-      <section className="collection-panel">
-        <h2>历史详情</h2>
-        <div className="empty-state">
-          <BookOpen size={28} aria-hidden="true" />
-          <p>从右侧最近记录中选择一条，查看完整写作复盘。</p>
-        </div>
-      </section>
-    );
-  }
-
-  const result = item.result || {};
-  const isPolish = item.type === "润色";
-  const outputText = isPolish ? result.polished_text || item.text : result.translation || item.text;
-  const suggestions = isPolish ? result.changes || [] : result.suggestions || [];
-
-  return (
-    <section className="history-detail">
-      <div className="detail-header">
-        <div>
-          <h2>{item.type}</h2>
-          <p>{formatDate(item.createdAt)}</p>
-        </div>
-        <button type="button" onClick={onStartRewrite}>回到写作台</button>
-      </div>
-
-      <div className="comparison-grid">
-        <article>
-          <span>初稿</span>
-          <p>{item.sourceText || "未记录原文"}</p>
-        </article>
-        <article>
-          <span>{isPolish ? "终稿" : "译文"}</span>
-          <p>{outputText}</p>
-          <button type="button" onClick={() => onSaveExpression(outputText, isPolish ? "历史润色" : "历史译文")}>
-            收藏表达
-          </button>
-        </article>
-      </div>
-
-      {result.review && (
-        <article className="detail-note">
-          <span>审校说明</span>
-          <p>{result.review}</p>
-          <button type="button" onClick={() => onSaveError(result.review, "历史审校")}>加入错题</button>
-        </article>
-      )}
-
-      {suggestions.length > 0 && (
-        <article className="detail-note">
-          <span>{isPolish ? "修改说明" : "学习建议"}</span>
-          <ul className="learning-list">
-            {suggestions.map((suggestion) => (
-              <li key={suggestion}>
-                <span>{suggestion}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isPolish) {
-                      onSaveError(suggestion, "历史修改");
-                    } else {
-                      onSaveExpression(suggestion, "历史建议");
-                    }
-                  }}
-                >
-                  {isPolish ? "加入错题" : "收藏"}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </article>
-      )}
-    </section>
-  );
-}
-
-function formatDate(value) {
-  if (!value) {
-    return "时间未记录";
-  }
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(value));
-}
-
-function countTodayItems(items) {
-  const todayKey = toDateKey(new Date());
-  return items.filter((item) => toDateKey(item.createdAt ? new Date(item.createdAt) : new Date()) === todayKey).length;
-}
-
-function buildLearningReport({ communityPosts, errors, expressions, goals, history, todayProgress }) {
-  const latestItems = history.slice(0, 5);
-  const latestExpressions = expressions.slice(0, 5);
-  const latestErrors = errors.slice(0, 5);
-
-  return [
-    "# ZJSUer Translation Assistant 学习报告",
-    "",
-    `导出时间：${new Intl.DateTimeFormat("zh-CN", {
-      dateStyle: "medium",
-      timeStyle: "short"
-    }).format(new Date())}`,
-    "",
-    "## 学习概览",
-    "",
-    `- 历史记录：${history.length} 条`,
-    `- 表达收藏：${expressions.length} 条`,
-    `- 错题沉淀：${errors.length} 条`,
-    `- 社群分享：${communityPosts.length} 条`,
-    `- 今日目标：${Math.min(todayProgress, goals.dailyTarget)} / ${goals.dailyTarget}`,
-    "",
-    "## 最近练习",
-    "",
-    ...formatReportList(latestItems, (item) => {
-      const source = item.sourceText ? `原文：${item.sourceText}` : "原文：未记录";
-      return `- ${formatDate(item.createdAt)}｜${item.type}｜${source}｜结果：${item.text}`;
-    }),
-    "",
-    "## 最近收藏表达",
-    "",
-    ...formatReportList(latestExpressions, (item) => `- ${formatDate(item.createdAt)}｜${item.source}｜${item.text}`),
-    "",
-    "## 最近错题",
-    "",
-    ...formatReportList(latestErrors, (item) => `- ${formatDate(item.createdAt)}｜${item.source}｜${item.text}`),
-    "",
-    "## 复盘建议",
-    "",
-    "- 从最近错题中挑选 2 条，尝试重新造句。",
-    "- 从表达库中挑选 3 条，写一段新的校园学习主题短文。",
-    "- 对比快速翻译和深度翻译结果，标记更自然的表达。"
-  ].join("\n");
-}
-
-function formatReportList(items, formatter) {
-  if (items.length === 0) {
-    return ["暂无记录。"];
-  }
-  return items.map(formatter);
-}
-
-function toDateKey(date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0")
-  ].join("-");
 }
 
 export default App;

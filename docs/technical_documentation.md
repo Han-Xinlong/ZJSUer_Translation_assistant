@@ -57,9 +57,20 @@ ZJSUer_Translation_assistant/
 │   ├── src/
 │   │   ├── App.jsx
 │   │   ├── api/client.js
-│   │   ├── components/LearningDashboard.jsx
+│   │   ├── components/
+│   │   │   ├── CollectionView.jsx
+│   │   │   ├── CommunityView.jsx
+│   │   │   ├── CorpusPanel.jsx
+│   │   │   ├── HistoryDetail.jsx
+│   │   │   ├── InsightPanel.jsx
+│   │   │   ├── LearningDashboard.jsx
+│   │   │   ├── Sidebar.jsx
+│   │   │   └── WorkspaceView.jsx
 │   │   ├── data/corpus.js
+│   │   ├── data/demoLearning.js
 │   │   ├── data/mockHistory.js
+│   │   ├── utils/date.js
+│   │   ├── utils/report.js
 │   │   ├── utils/storage.js
 │   │   └── styles.css
 │   ├── package.json
@@ -82,10 +93,10 @@ ZJSUer_Translation_assistant/
 |---|---|---|
 | React 18 | 页面状态、组件渲染 | `frontend/src/App.jsx` |
 | Vite 4 | 本地开发与构建 | `frontend/vite.config.js` |
-| lucide-react | 工具按钮图标 | `frontend/src/App.jsx` |
+| lucide-react | 工具按钮图标 | `frontend/src/components/*` |
 | ECharts | 学习趋势图 | `frontend/src/components/LearningDashboard.jsx` |
 | localStorage | 本地学习数据持久化 | `frontend/src/utils/storage.js` |
-| Web Speech API | 浏览器语音录入 | `frontend/src/App.jsx` |
+| Web Speech API | 浏览器语音录入 | `frontend/src/App.jsx` 编排，`WorkspaceView` 触发 |
 
 ### 4.2 页面布局
 
@@ -115,7 +126,28 @@ CSS 核心布局：
 
 ### 4.3 前端状态模型
 
-`App.jsx` 是当前 MVP 的核心状态容器。
+`App.jsx` 是当前前端的状态编排层，负责接口调用、视图选择、学习数据状态和本地持久化。具体页面展示已经拆分到 `frontend/src/components/` 下，避免所有 UI 逻辑堆叠在单一文件中。
+
+组件边界：
+
+| 组件 | 职责 |
+|---|---|
+| `Sidebar` | 左侧产品品牌和视图导航 |
+| `WorkspaceView` | 写作台、工具栏、原文输入、AI 输出、推荐语料 |
+| `InsightPanel` | 右侧今日复盘、最近记录、演示工具 |
+| `CollectionView` | 表达库与错题库的通用列表 |
+| `HistoryDetail` | 单条历史记录复盘、初稿/译文对比、再次收藏 |
+| `CommunityView` | 本地社群互学内容展示与移除 |
+| `LearningDashboard` | 学习档案、趋势图、热力格和每日目标 |
+| `CorpusPanel` | 推荐语料卡片 |
+
+工具层：
+
+| 文件 | 职责 |
+|---|---|
+| `utils/storage.js` | localStorage 读写、清空项目数据、去重保存 |
+| `utils/date.js` | 日期格式化、今日计数、日期 key 生成 |
+| `utils/report.js` | Markdown 学习报告生成 |
 
 | 状态 | 类型 | 作用 |
 |---|---|---|
@@ -677,13 +709,13 @@ python3 -m compileall backend/app
 | 社群互学为本地版 | 暂无账号和多人同步 | 增加后端用户与同步 |
 | 语音识别依赖浏览器 | Safari/Chrome 支持差异明显 | 增加兼容提示和手动 fallback |
 | AI 真实效果未充分评测 | 当前默认 mock | 配置真实 Key 后做样例评估 |
-| App.jsx 较大 | MVP 阶段集中实现 | 拆分 Workspace、History、Collection 等组件 |
+| 组件仍可继续细分 | `WorkspaceView` 和 `LearningDashboard` 后续可能继续增长 | 按结果区、图表区、演示工具继续拆分 |
 | 缺少自动化测试 | 目前依靠 build 和手动验证 | 增加 Vitest/Playwright |
 
 ## 10. 后续技术演进建议
 
-1. **组件拆分**
-   将 `App.jsx` 拆为 `WorkspaceView`、`HistoryDetail`、`CollectionView`、`CommunityView`、`InsightPanel`。
+1. **组件继续细分**
+   当前已完成第一轮组件化，后续可继续拆分 `WorkspaceView` 的 AI 结果区和 `LearningDashboard` 的图表区。
 
 2. **数据层升级**
    用 IndexedDB 替代 localStorage，支持更完整的历史、版本和检索。
@@ -691,12 +723,11 @@ python3 -m compileall backend/app
 3. **AI 评估集**
    建立 `datasets/evaluation_samples.json`，对快速/深度/润色输出进行人工评分。
 
-4. **导出报告**
-   支持导出个人学习报告、表达库、错题库。
+4. **报告能力增强**
+   当前已支持 Markdown 学习报告导出，后续可增加 Word/PDF 导出和教师端汇总。
 
 5. **后端同步**
    增加用户系统、云端备份、社群共享 API。
 
 6. **自动化测试**
    增加前端单元测试、API 测试和浏览器端交互测试。
-
