@@ -738,7 +738,8 @@ python3 -m compileall backend/app
 | 层 | 平台 | 配置文件 | 说明 |
 |---|---|---|---|
 | 前端 | Vercel | `frontend/vercel.json` | Vite 静态站点 |
-| 后端 | Render | `render.yaml` | FastAPI Web Service |
+| 后端 | Vercel | `backend/server.py` | FastAPI Serverless Function |
+| 后端备选 | Render | `render.yaml` | FastAPI Web Service |
 
 部署说明见：
 
@@ -748,10 +749,10 @@ python3 -m compileall backend/app
 
 | 环境变量 | 位置 | 说明 |
 |---|---|---|
-| `VITE_API_BASE_URL` | Vercel 前端 | Render 后端地址，不带 `/api` |
-| `ALLOWED_ORIGINS` | Render 后端 | Vercel 前端地址，JSON 数组字符串 |
-| `AI_PROVIDER` | Render 后端 | 初期为 `mock`，真实模型为 `openai` |
-| `OPENAI_API_KEY` | Render 后端 | 仅真实模型模式需要 |
+| `VITE_API_BASE_URL` | Vercel 前端 | 后端地址，不带 `/api` |
+| `ALLOWED_ORIGINS` | 后端平台 | Vercel 前端地址，JSON 数组字符串 |
+| `AI_PROVIDER` | 后端平台 | 初期为 `mock`，真实模型为 `openai` |
+| `OPENAI_API_KEY` | 后端平台 | 仅真实模型模式需要 |
 
 当前前端单元测试使用 Vitest，已覆盖：
 

@@ -1,38 +1,41 @@
 # 线上部署指南
 
-本指南用于把项目先部署到托管平台，满足小范围内部测试需要。当前推荐方案是：
+本指南用于把项目先部署到托管平台，满足小范围内部测试需要。当前优先推荐方案是：
 
 - 前端：Vercel
-- 后端：Render
+- 后端：Vercel FastAPI
 - AI Provider：初期使用 `mock`，测试流程稳定后再切换真实 OpenAI。
 
 这样可以先获得一个可访问的 Web Demo，不需要立刻购买服务器，也不需要维护 Nginx、HTTPS、进程守护和安全组。
+
+> 如果 Render 要求绑定 Visa 卡，可以直接跳过 Render，使用本文的 Vercel 后端方案。
 
 ## 1. 部署顺序
 
 推荐顺序：
 
-1. 先部署后端到 Render，拿到后端 API 地址。
-2. 再部署前端到 Vercel，把后端地址填入 `VITE_API_BASE_URL`。
-3. 拿到 Vercel 前端地址后，回到 Render 设置 `ALLOWED_ORIGINS`。
+1. 先在 Vercel 部署后端项目，拿到后端 API 地址。
+2. 再在 Vercel 部署前端项目，把后端地址填入 `VITE_API_BASE_URL`。
+3. 拿到 Vercel 前端地址后，回到后端项目设置 `ALLOWED_ORIGINS`。
 4. 打开线上前端，确认右侧 AI 服务状态显示正常。
 
-## 2. 后端部署到 Render
+## 2. 后端部署到 Vercel
 
-仓库根目录已经提供：
+后端目录已经提供：
 
 ```text
-render.yaml
+backend/server.py
+backend/requirements.txt
 ```
 
-Render 可以读取这个 Blueprint 来创建 FastAPI Web Service。
+`backend/server.py` 会导出 FastAPI `app`，供 Vercel Python Runtime 识别。
 
 ### 2.1 创建服务
 
-在 Render 中选择：
+在 Vercel 中选择：
 
 ```text
-New -> Blueprint
+Add New -> Project
 ```
 
 连接 GitHub 仓库：
@@ -41,21 +44,25 @@ New -> Blueprint
 Han-Xinlong/ZJSUer_Translation_assistant
 ```
 
-Render 会读取根目录的 `render.yaml`。
-
-### 2.2 后端启动配置
-
-当前后端配置：
+项目设置：
 
 ```text
 Root Directory: backend
-Plan: free
-Build Command: pip install -r requirements.txt
-Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-Health Check Path: /api/health
+Framework Preset: Other
+Install Command: pip install -r requirements.txt
+Build Command: 留空
+Output Directory: 留空
 ```
 
-免费实例适合小范围内部测试。若后续访问变多，再升级实例规格。
+### 2.2 后端启动配置
+
+Vercel 会从 `backend/server.py` 识别 FastAPI `app`。
+
+线上后端地址类似：
+
+```text
+https://your-backend-project.vercel.app
+```
 
 ### 2.3 后端环境变量
 
@@ -68,7 +75,7 @@ ALLOWED_ORIGINS=["http://localhost:5173"]
 OPENAI_MODEL=gpt-5-mini
 ```
 
-等 Vercel 前端地址生成后，把 `ALLOWED_ORIGINS` 改成：
+等前端 Vercel 地址生成后，把后端项目里的 `ALLOWED_ORIGINS` 改成：
 
 ```env
 ALLOWED_ORIGINS=["https://your-vercel-domain.vercel.app"]
@@ -87,7 +94,7 @@ ALLOWED_ORIGINS=["http://localhost:5173","https://your-vercel-domain.vercel.app"
 部署完成后访问：
 
 ```text
-https://your-render-service.onrender.com/api/health
+https://your-backend-project.vercel.app/api/health
 ```
 
 应返回：
@@ -99,7 +106,7 @@ https://your-render-service.onrender.com/api/health
 再访问：
 
 ```text
-https://your-render-service.onrender.com/api/status
+https://your-backend-project.vercel.app/api/status
 ```
 
 mock 模式下应看到：
@@ -152,7 +159,7 @@ Output Directory: dist
 在 Vercel 项目环境变量中添加：
 
 ```env
-VITE_API_BASE_URL=https://your-render-service.onrender.com
+VITE_API_BASE_URL=https://your-backend-project.vercel.app
 ```
 
 注意：
@@ -170,7 +177,29 @@ VITE_API_BASE_URL=https://your-render-service.onrender.com
 - 写作台点击“翻译”，是否能得到 mock 翻译结果。
 - 点击“导出报告”，是否能下载 Markdown 学习报告。
 
-## 4. 切换真实 OpenAI
+## 4. Render 备选方案
+
+如果后续你有 Visa 卡，或者希望使用传统长驻 Web Service，也可以继续使用 Render。
+
+仓库根目录保留：
+
+```text
+render.yaml
+```
+
+Render 配置：
+
+```text
+Root Directory: backend
+Plan: free
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+Health Check Path: /api/health
+```
+
+Render 的环境变量配置方式与 Vercel 后端相同。
+
+## 5. 切换真实 OpenAI
 
 内部测试第一阶段建议先保持：
 
@@ -190,7 +219,7 @@ OPENAI_MODEL=gpt-5-mini
 
 如果配置正确，前端右侧 AI 服务状态会从“演示模式”变为“真实模型”。
 
-## 5. 小范围内部测试建议
+## 6. 小范围内部测试建议
 
 第一轮测试目标不是验证模型质量，而是验证产品流程：
 
@@ -218,7 +247,7 @@ OPENAI_MODEL=gpt-5-mini
 9. 导出学习报告。
 10. 填写反馈表。
 
-## 6. 何时再考虑买服务器
+## 7. 何时再考虑买服务器
 
 如果出现以下情况，再考虑购买服务器：
 

@@ -235,10 +235,10 @@ python3 -m compileall backend/app
 
 ### 线上部署
 
-小范围内部测试阶段推荐使用 Vercel + Render，不需要先购买服务器：
+小范围内部测试阶段推荐优先使用 Vercel，不需要先购买服务器：
 
 - 前端部署到 Vercel。
-- 后端部署到 Render。
+- 后端也部署到 Vercel FastAPI。
 - 初期使用 `mock` 模式，流程稳定后再切换真实 OpenAI。
 
 详细步骤见：
