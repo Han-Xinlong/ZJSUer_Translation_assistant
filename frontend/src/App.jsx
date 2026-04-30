@@ -2,10 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   BrainCircuit,
+  Database,
+  Download,
   Maximize2,
   Languages,
   Loader2,
   Mic,
+  RotateCcw,
   Send,
   Sparkles
 } from "lucide-react";
@@ -13,6 +16,13 @@ import {
 import { polish, translate } from "./api/client.js";
 import LearningDashboard from "./components/LearningDashboard.jsx";
 import { corpusExamples } from "./data/corpus.js";
+import {
+  demoCommunityPosts,
+  demoErrors,
+  demoExpressions,
+  demoGoals,
+  demoHistory
+} from "./data/demoLearning.js";
 import { sampleHistory } from "./data/mockHistory.js";
 import {
   COMMUNITY_KEY,
@@ -20,6 +30,7 @@ import {
   EXPRESSIONS_KEY,
   GOALS_KEY,
   HISTORY_KEY,
+  clearAppStorage,
   loadCollection,
   loadObject,
   saveCollection,
@@ -217,6 +228,56 @@ function App() {
     setHistory([]);
     setSelectedHistoryId(null);
     window.localStorage.removeItem(HISTORY_KEY);
+  }
+
+  function handleLoadDemoData() {
+    setHistory(demoHistory);
+    setExpressions(demoExpressions);
+    setErrors(demoErrors);
+    setCommunityPosts(demoCommunityPosts);
+    setGoals(demoGoals);
+    setSelectedHistoryId(demoHistory[0]?.id || null);
+    setTranslationResult(demoHistory[0]?.result || null);
+    setPolishResult(demoHistory[1]?.result || null);
+    setSourceText(demoHistory[0]?.sourceText || sourceText);
+    setTargetLanguage(demoHistory[0]?.targetLanguage || targetLanguage);
+    setMode(demoHistory[0]?.mode || mode);
+    setActiveView("profile");
+    setErrorMessage("");
+  }
+
+  function handleClearAllLearningData() {
+    clearAppStorage();
+    setHistory([]);
+    setExpressions([]);
+    setErrors([]);
+    setCommunityPosts([]);
+    setGoals(DEFAULT_GOALS);
+    setSelectedHistoryId(null);
+    setTranslationResult(null);
+    setPolishResult(null);
+    setActiveView("workspace");
+    setErrorMessage("");
+  }
+
+  function handleExportReport() {
+    const report = buildLearningReport({
+      communityPosts,
+      errors,
+      expressions,
+      goals,
+      history,
+      todayProgress
+    });
+    const blob = new Blob([report], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `zjsuer-learning-report-${toDateKey(new Date())}.md`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   function handleSaveExpression(text, source = "AI 建议") {
@@ -605,6 +666,22 @@ function App() {
               ))}
             </ul>
           </section>
+
+          <section className="demo-tools" aria-label="演示工具">
+            <h3>演示工具</h3>
+            <button type="button" onClick={handleExportReport}>
+              <Download size={16} aria-hidden="true" />
+              导出报告
+            </button>
+            <button type="button" onClick={handleLoadDemoData}>
+              <Database size={16} aria-hidden="true" />
+              载入演示数据
+            </button>
+            <button type="button" onClick={handleClearAllLearningData}>
+              <RotateCcw size={16} aria-hidden="true" />
+              清空全部数据
+            </button>
+          </section>
         </aside>
       </section>
     </main>
@@ -777,6 +854,57 @@ function formatDate(value) {
 function countTodayItems(items) {
   const todayKey = toDateKey(new Date());
   return items.filter((item) => toDateKey(item.createdAt ? new Date(item.createdAt) : new Date()) === todayKey).length;
+}
+
+function buildLearningReport({ communityPosts, errors, expressions, goals, history, todayProgress }) {
+  const latestItems = history.slice(0, 5);
+  const latestExpressions = expressions.slice(0, 5);
+  const latestErrors = errors.slice(0, 5);
+
+  return [
+    "# ZJSUer Translation Assistant 学习报告",
+    "",
+    `导出时间：${new Intl.DateTimeFormat("zh-CN", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(new Date())}`,
+    "",
+    "## 学习概览",
+    "",
+    `- 历史记录：${history.length} 条`,
+    `- 表达收藏：${expressions.length} 条`,
+    `- 错题沉淀：${errors.length} 条`,
+    `- 社群分享：${communityPosts.length} 条`,
+    `- 今日目标：${Math.min(todayProgress, goals.dailyTarget)} / ${goals.dailyTarget}`,
+    "",
+    "## 最近练习",
+    "",
+    ...formatReportList(latestItems, (item) => {
+      const source = item.sourceText ? `原文：${item.sourceText}` : "原文：未记录";
+      return `- ${formatDate(item.createdAt)}｜${item.type}｜${source}｜结果：${item.text}`;
+    }),
+    "",
+    "## 最近收藏表达",
+    "",
+    ...formatReportList(latestExpressions, (item) => `- ${formatDate(item.createdAt)}｜${item.source}｜${item.text}`),
+    "",
+    "## 最近错题",
+    "",
+    ...formatReportList(latestErrors, (item) => `- ${formatDate(item.createdAt)}｜${item.source}｜${item.text}`),
+    "",
+    "## 复盘建议",
+    "",
+    "- 从最近错题中挑选 2 条，尝试重新造句。",
+    "- 从表达库中挑选 3 条，写一段新的校园学习主题短文。",
+    "- 对比快速翻译和深度翻译结果，标记更自然的表达。"
+  ].join("\n");
+}
+
+function formatReportList(items, formatter) {
+  if (items.length === 0) {
+    return ["暂无记录。"];
+  }
+  return items.map(formatter);
 }
 
 function toDateKey(date) {

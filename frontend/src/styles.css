@@ -786,6 +786,37 @@ textarea {
   margin: 4px 0 0;
 }
 
+.demo-tools {
+  border-top: 1px solid #d7dde5;
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+}
+
+.demo-tools h3 {
+  margin-bottom: 2px;
+}
+
+.demo-tools button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid #cfd7df;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f4c4a;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+.demo-tools button:hover {
+  border-color: #0f766e;
+  background: #f0fdfa;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
