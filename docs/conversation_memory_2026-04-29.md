@@ -659,3 +659,119 @@ npm --prefix frontend audit --omit=dev
 1. 增加后端 `/api/status`，暴露 provider、model、mock/openai 状态。
 2. 前端右侧或顶部展示当前 AI 服务状态，降低同学试用时的困惑。
 3. 再往后增加 Playwright，覆盖“载入演示数据 -> 学习档案 -> 导出报告”等关键交互链路。
+
+## 14. 2026-04-30 AI 服务状态可视化记录
+
+用户继续要求以资深全栈工程师、AI 工程师和参赛导师身份推进项目。本轮按上一轮建议，完成 AI 服务状态可视化，解决同学试用和答辩演示时“不知道当前是 mock 还是真实模型”的问题。
+
+### 14.1 后端新增 `/api/status`
+
+新增接口：
+
+```text
+GET /api/status
+```
+
+返回内容：
+
+- `status`：`ok` 或 `degraded`。
+- `provider`：当前 AI Provider，例如 `mock` / `openai`。
+- `model`：当前模型名，mock 模式下为 `mock`。
+- `configured`：当前 Provider 配置是否完整。
+- `message`：给前端展示的安全说明。
+
+安全设计：
+
+- 不返回任何 API Key。
+- OpenAI 模式下只返回模型名和是否配置了 Key。
+- 如果选择了 OpenAI 但缺少 `OPENAI_API_KEY`，接口返回 `degraded`，前端显示“配置待完善”。
+
+涉及文件：
+
+- `backend/app/api/routes.py`
+- `backend/app/schemas/ai.py`
+
+### 14.2 前端新增状态卡
+
+前端启动后调用：
+
+```text
+GET /api/status
+```
+
+并在右侧“今日复盘”上方展示 AI 服务状态。
+
+展示状态：
+
+- `检查中`
+- `后端离线`
+- `配置待完善`
+- `演示模式`
+- `真实模型`
+
+涉及文件：
+
+- `frontend/src/App.jsx`
+- `frontend/src/api/client.js`
+- `frontend/src/components/InsightPanel.jsx`
+- `frontend/src/styles.css`
+
+### 14.3 测试与文档
+
+新增：
+
+- `frontend/src/api/client.test.js`
+
+覆盖：
+
+- `getStatus()` 正常请求 `/api/status`。
+- 后端错误时抛出可读错误。
+
+更新：
+
+- `README.md`
+- `backend/README.md`
+- `docs/technical_documentation.md`
+
+文档中记录了 `/api/status` 的用途、响应示例和前端状态卡语义。
+
+### 14.4 验证结果
+
+已验证：
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+python3 -m compileall backend/app
+backend/.venv/bin/python FastAPI TestClient 检查 /api/status
+```
+
+结果：
+
+- 前端：4 个测试文件，13 个测试用例全部通过。
+- 前端生产构建通过。
+- 后端 Python 语法检查通过。
+- `/api/status` 在默认 mock 模式下返回：
+
+```json
+{
+  "status": "ok",
+  "provider": "mock",
+  "model": "mock",
+  "configured": true,
+  "message": "Mock provider is active. No API key is required."
+}
+```
+
+对应提交：
+
+```text
+0b6458c feat: show ai service status
+```
+
+### 14.5 下一步建议
+
+继续打磨时，建议进入“演示闭环自动化”：
+
+1. 增加 Playwright，覆盖打开页面、载入演示数据、进入学习档案、导出报告等关键链路。
+2. 或者先加后端 pytest，把 `/api/health`、`/api/status`、mock 翻译、mock 润色都纳入自动化测试。
