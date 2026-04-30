@@ -859,3 +859,96 @@ b993222 test: add backend api coverage
 
 1. 增加 GitHub Actions，自动运行前端 test/build 与后端 pytest。
 2. 增加 Playwright，覆盖“打开页面 -> 后端状态可见 -> 载入演示数据 -> 学习档案有数据”的核心演示链路。
+
+## 16. 2026-04-30 GitHub Actions CI 记录
+
+用户继续要求以资深全栈工程师、AI 工程师和参赛导师身份推进项目。本轮根据上一轮建议，为仓库增加 GitHub Actions，让测试和构建在远端自动执行。
+
+### 16.1 新增 CI 工作流
+
+新增：
+
+- `.github/workflows/ci.yml`
+
+触发时机：
+
+- push 到 `main`
+- Pull Request
+
+权限：
+
+- `contents: read`
+
+### 16.2 前端 Job
+
+配置：
+
+- Runner：`ubuntu-latest`
+- Node：`18`
+- npm cache：使用 `frontend/package-lock.json`
+
+步骤：
+
+```bash
+npm ci
+npm test
+npm run build
+```
+
+### 16.3 后端 Job
+
+配置：
+
+- Runner：`ubuntu-latest`
+- Python：`3.10`
+- pip cache：使用 `backend/requirements-dev.txt`
+
+步骤：
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements-dev.txt
+pytest
+python -m compileall app
+```
+
+### 16.4 文档同步
+
+更新：
+
+- `README.md`
+- `docs/technical_documentation.md`
+
+文档中说明了 GitHub Actions 的触发时机和前后端检查内容。
+
+### 16.5 本地验证
+
+提交前已在本地验证：
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+cd backend && .venv/bin/python -m pytest
+python3 -m compileall backend/app
+```
+
+结果：
+
+- 前端 Vitest：4 个测试文件，13 个测试用例全部通过。
+- 后端 pytest：6 个测试用例全部通过。
+- 前端生产构建通过。
+- 后端 Python 语法检查通过。
+
+对应提交：
+
+```text
+9300e02 ci: add github actions checks
+```
+
+### 16.6 下一步建议
+
+下一轮建议继续补端到端测试：
+
+1. 增加 Playwright。
+2. 覆盖页面打开、AI 状态可见、载入演示数据、学习档案展示、历史详情跳转等关键链路。
+3. 将 Playwright 接入 GitHub Actions，形成“单元测试 + API 测试 + 端到端测试”的完整护栏。
