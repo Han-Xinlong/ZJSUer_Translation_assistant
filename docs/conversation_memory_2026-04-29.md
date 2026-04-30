@@ -1454,3 +1454,41 @@ docker compose -f docker-compose.tencent.yml up --build -d frontend gateway
 ```
 
 修复部署后，再在浏览器访问 `http://62.234.13.61/`，点击“翻译”确认结果是否能显示并写入历史记录。
+
+## 21. 2026-04-30 腾讯云前端缓存修正
+
+用户在服务器本地临时 patch 前端后，访问：
+
+```text
+http://62.234.13.61/?v=local-fix-1
+```
+
+确认“翻译”按钮恢复正常。
+
+用户随后希望长期使用干净地址：
+
+```text
+http://62.234.13.61/
+```
+
+判断：`?v=local-fix-1` 只是绕过浏览器缓存的临时参数，不应作为正式访问地址。正式方案是在前端 Nginx 配置中让 `index.html` 不缓存，同时继续让带 hash 的 JS/CSS 静态资源长期缓存。
+
+已修改：
+
+- `deploy/nginx/frontend.conf`
+
+新增：
+
+```nginx
+location = /index.html {
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
+    try_files /index.html =404;
+}
+
+location / {
+    try_files $uri $uri/ /index.html;
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
+}
+```
+
+目的：以后访问根路径 `/` 时，浏览器会重新获取最新入口 HTML，从而加载最新 hash 文件名的前端 JS；无需再使用 `?v=...` 参数。
