@@ -207,6 +207,41 @@ http://服务器公网IP/
 http://服务器公网IP/api/status
 ```
 
+### 4.6.1 Docker Hub 拉取超时
+
+如果启动时看到类似错误：
+
+```text
+failed to resolve reference "docker.io/library/nginx:1.27-alpine"
+dial tcp ...:443: i/o timeout
+```
+
+说明服务器访问 Docker Hub 超时。腾讯云服务器可先配置 Docker 镜像加速：
+
+```bash
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json >/dev/null <<'EOF'
+{
+  "registry-mirrors": [
+    "https://mirror.ccs.tencentyun.com"
+  ]
+}
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+docker info | grep -A 5 "Registry Mirrors"
+```
+
+然后重新拉取和构建：
+
+```bash
+docker compose -f docker-compose.tencent.yml pull
+docker compose -f docker-compose.tencent.yml up --build -d
+```
+
+如果镜像加速仍不可用，可以临时多执行一次 `docker pull nginx:1.27-alpine`、`docker pull python:3.11-slim`、`docker pull node:20-alpine` 观察具体哪个基础镜像超时。
+
 ### 4.6 一键冒烟检查
 
 仓库提供了检查脚本：
