@@ -697,9 +697,16 @@ http://127.0.0.1:5173/
 ### 8.3 验证
 
 ```bash
+npm --prefix frontend test
 npm --prefix frontend run build
 python3 -m compileall backend/app
 ```
+
+当前前端单元测试使用 Vitest，已覆盖：
+
+- `frontend/src/utils/date.js`：日期 key、缺省日期展示、今日条目统计。
+- `frontend/src/utils/report.js`：Markdown 学习报告的统计字段、最近记录和空状态。
+- `frontend/src/utils/storage.js`：localStorage 读写、异常 fallback、项目数据清空、表达去重。
 
 ## 9. 当前限制
 
@@ -710,7 +717,7 @@ python3 -m compileall backend/app
 | 语音识别依赖浏览器 | Safari/Chrome 支持差异明显 | 增加兼容提示和手动 fallback |
 | AI 真实效果未充分评测 | 当前默认 mock | 配置真实 Key 后做样例评估 |
 | 组件仍可继续细分 | `WorkspaceView` 和 `LearningDashboard` 后续可能继续增长 | 按结果区、图表区、演示工具继续拆分 |
-| 缺少自动化测试 | 目前依靠 build 和手动验证 | 增加 Vitest/Playwright |
+| 浏览器交互测试不足 | 已有工具函数单测，尚缺端到端交互覆盖 | 增加 Playwright |
 
 ## 10. 后续技术演进建议
 
@@ -730,4 +737,4 @@ python3 -m compileall backend/app
    增加用户系统、云端备份、社群共享 API。
 
 6. **自动化测试**
-   增加前端单元测试、API 测试和浏览器端交互测试。
+   当前已增加前端工具函数单元测试，后续继续补 API 测试和浏览器端交互测试。
