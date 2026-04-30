@@ -775,3 +775,87 @@ backend/.venv/bin/python FastAPI TestClient 检查 /api/status
 
 1. 增加 Playwright，覆盖打开页面、载入演示数据、进入学习档案、导出报告等关键链路。
 2. 或者先加后端 pytest，把 `/api/health`、`/api/status`、mock 翻译、mock 润色都纳入自动化测试。
+
+## 15. 2026-04-30 后端 pytest 覆盖记录
+
+用户继续要求以资深全栈工程师、AI 工程师和参赛导师身份推进项目。本轮根据上一轮建议，补上后端 pytest 测试，为答辩演示和后续接真实模型增加第二道保险。
+
+### 15.1 新增测试依赖
+
+新增：
+
+- `backend/requirements-dev.txt`
+
+内容：
+
+```text
+-r requirements.txt
+pytest==8.3.5
+```
+
+设计思路：
+
+- `requirements.txt` 保持运行依赖。
+- `requirements-dev.txt` 放测试依赖，避免部署或演示环境无谓安装开发工具。
+
+### 15.2 新增后端测试
+
+新增：
+
+- `backend/tests/test_api.py`
+
+覆盖：
+
+- `GET /api/health`
+- `GET /api/status`
+- `POST /api/translate` mock 快速翻译
+- `POST /api/translate` mock 深度翻译
+- `POST /api/polish` mock 润色
+- 空文本请求校验，确认返回 422
+
+测试方式：
+
+- 使用 FastAPI `TestClient`。
+- 不需要启动 uvicorn。
+- 默认环境使用 `mock` provider，不需要真实 API Key。
+
+### 15.3 文档同步
+
+更新：
+
+- `README.md`
+- `backend/README.md`
+- `docs/technical_documentation.md`
+
+同步加入后端 pytest 命令与当前覆盖范围。
+
+### 15.4 验证结果
+
+已验证：
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+cd backend && .venv/bin/python -m pytest
+python3 -m compileall backend/app
+```
+
+结果：
+
+- 前端 Vitest：4 个测试文件，13 个测试用例全部通过。
+- 后端 pytest：6 个测试用例全部通过。
+- 前端生产构建通过。
+- 后端 Python 语法检查通过。
+
+对应提交：
+
+```text
+b993222 test: add backend api coverage
+```
+
+### 15.5 下一步建议
+
+下一轮可以进入 CI 或端到端测试：
+
+1. 增加 GitHub Actions，自动运行前端 test/build 与后端 pytest。
+2. 增加 Playwright，覆盖“打开页面 -> 后端状态可见 -> 载入演示数据 -> 学习档案有数据”的核心演示链路。
