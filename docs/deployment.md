@@ -1,0 +1,231 @@
+# 线上部署指南
+
+本指南用于把项目先部署到托管平台，满足小范围内部测试需要。当前推荐方案是：
+
+- 前端：Vercel
+- 后端：Render
+- AI Provider：初期使用 `mock`，测试流程稳定后再切换真实 OpenAI。
+
+这样可以先获得一个可访问的 Web Demo，不需要立刻购买服务器，也不需要维护 Nginx、HTTPS、进程守护和安全组。
+
+## 1. 部署顺序
+
+推荐顺序：
+
+1. 先部署后端到 Render，拿到后端 API 地址。
+2. 再部署前端到 Vercel，把后端地址填入 `VITE_API_BASE_URL`。
+3. 拿到 Vercel 前端地址后，回到 Render 设置 `ALLOWED_ORIGINS`。
+4. 打开线上前端，确认右侧 AI 服务状态显示正常。
+
+## 2. 后端部署到 Render
+
+仓库根目录已经提供：
+
+```text
+render.yaml
+```
+
+Render 可以读取这个 Blueprint 来创建 FastAPI Web Service。
+
+### 2.1 创建服务
+
+在 Render 中选择：
+
+```text
+New -> Blueprint
+```
+
+连接 GitHub 仓库：
+
+```text
+Han-Xinlong/ZJSUer_Translation_assistant
+```
+
+Render 会读取根目录的 `render.yaml`。
+
+### 2.2 后端启动配置
+
+当前后端配置：
+
+```text
+Root Directory: backend
+Plan: free
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+Health Check Path: /api/health
+```
+
+免费实例适合小范围内部测试。若后续访问变多，再升级实例规格。
+
+### 2.3 后端环境变量
+
+初次内部测试推荐使用 mock：
+
+```env
+APP_ENV=production
+AI_PROVIDER=mock
+ALLOWED_ORIGINS=["http://localhost:5173"]
+OPENAI_MODEL=gpt-5-mini
+```
+
+等 Vercel 前端地址生成后，把 `ALLOWED_ORIGINS` 改成：
+
+```env
+ALLOWED_ORIGINS=["https://your-vercel-domain.vercel.app"]
+```
+
+如果需要同时允许本地开发和线上前端：
+
+```env
+ALLOWED_ORIGINS=["http://localhost:5173","https://your-vercel-domain.vercel.app"]
+```
+
+注意：`ALLOWED_ORIGINS` 必须是 JSON 数组字符串。
+
+### 2.4 检查后端
+
+部署完成后访问：
+
+```text
+https://your-render-service.onrender.com/api/health
+```
+
+应返回：
+
+```json
+{"status":"ok"}
+```
+
+再访问：
+
+```text
+https://your-render-service.onrender.com/api/status
+```
+
+mock 模式下应看到：
+
+```json
+{
+  "status": "ok",
+  "provider": "mock",
+  "model": "mock",
+  "configured": true,
+  "message": "Mock provider is active. No API key is required."
+}
+```
+
+## 3. 前端部署到 Vercel
+
+前端目录已经提供：
+
+```text
+frontend/vercel.json
+frontend/.env.example
+```
+
+### 3.1 创建项目
+
+在 Vercel 中选择：
+
+```text
+Add New -> Project
+```
+
+导入 GitHub 仓库：
+
+```text
+Han-Xinlong/ZJSUer_Translation_assistant
+```
+
+项目设置：
+
+```text
+Root Directory: frontend
+Framework Preset: Vite
+Install Command: npm ci
+Build Command: npm run build
+Output Directory: dist
+```
+
+### 3.2 配置前端环境变量
+
+在 Vercel 项目环境变量中添加：
+
+```env
+VITE_API_BASE_URL=https://your-render-service.onrender.com
+```
+
+注意：
+
+- 不要在末尾加 `/api`。
+- 前端代码会自动请求 `${VITE_API_BASE_URL}/api/...`。
+
+### 3.3 检查前端
+
+部署完成后打开 Vercel 地址，重点检查：
+
+- 页面是否正常打开。
+- 右侧 AI 服务状态是否显示“演示模式”。
+- 点击“载入演示数据”，学习档案是否出现趋势图和数据。
+- 写作台点击“翻译”，是否能得到 mock 翻译结果。
+- 点击“导出报告”，是否能下载 Markdown 学习报告。
+
+## 4. 切换真实 OpenAI
+
+内部测试第一阶段建议先保持：
+
+```env
+AI_PROVIDER=mock
+```
+
+当需要测试真实模型时，在 Render 后端环境变量中设置：
+
+```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=your_api_key
+OPENAI_MODEL=gpt-5-mini
+```
+
+然后重新部署后端。
+
+如果配置正确，前端右侧 AI 服务状态会从“演示模式”变为“真实模型”。
+
+## 5. 小范围内部测试建议
+
+第一轮测试目标不是验证模型质量，而是验证产品流程：
+
+- 是否能顺利打开页面。
+- 是否能完成翻译和润色。
+- 是否能收藏表达。
+- 是否能保存错题。
+- 是否能查看历史详情。
+- 是否能看到学习档案。
+- 是否理解右侧 AI 服务状态。
+- 是否能导出学习报告。
+
+建议先找 5-10 位同学试用，每人完成 10 分钟任务，然后收集反馈。
+
+推荐测试任务：
+
+1. 打开线上链接。
+2. 点击“载入演示数据”。
+3. 查看学习档案。
+4. 回到写作台输入一段校园生活文本。
+5. 分别点击“翻译”和“润色”。
+6. 收藏一条表达。
+7. 加入一条错题。
+8. 查看历史详情。
+9. 导出学习报告。
+10. 填写反馈表。
+
+## 6. 何时再考虑买服务器
+
+如果出现以下情况，再考虑购买服务器：
+
+- Render/Vercel 访问速度无法满足测试。
+- 需要部署在国内网络环境。
+- 需要长期稳定运行。
+- 需要数据库、账号系统、文件存储和日志分析。
+- 需要更严格的数据隐私与访问控制。
+
+在此之前，Vercel + Render 更适合当前项目阶段。

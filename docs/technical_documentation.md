@@ -731,6 +731,28 @@ python3 -m compileall backend/app
 - 前端 Job：Node 18、`npm ci`、`npm test`、`npm run build`。
 - 后端 Job：Python 3.10、安装 `backend/requirements-dev.txt`、`pytest`、`python -m compileall app`。
 
+### 8.4 托管平台部署
+
+当前推荐的小范围内部测试部署方案：
+
+| 层 | 平台 | 配置文件 | 说明 |
+|---|---|---|---|
+| 前端 | Vercel | `frontend/vercel.json` | Vite 静态站点 |
+| 后端 | Render | `render.yaml` | FastAPI Web Service |
+
+部署说明见：
+
+- `docs/deployment.md`
+
+核心环境变量：
+
+| 环境变量 | 位置 | 说明 |
+|---|---|---|
+| `VITE_API_BASE_URL` | Vercel 前端 | Render 后端地址，不带 `/api` |
+| `ALLOWED_ORIGINS` | Render 后端 | Vercel 前端地址，JSON 数组字符串 |
+| `AI_PROVIDER` | Render 后端 | 初期为 `mock`，真实模型为 `openai` |
+| `OPENAI_API_KEY` | Render 后端 | 仅真实模型模式需要 |
+
 当前前端单元测试使用 Vitest，已覆盖：
 
 - `frontend/src/utils/date.js`：日期 key、缺省日期展示、今日条目统计。
