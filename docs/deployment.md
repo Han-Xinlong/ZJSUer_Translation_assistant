@@ -10,6 +10,13 @@
 
 > 如果 Render 要求绑定 Visa 卡，可以直接跳过 Render，使用本文的 Vercel 后端方案。
 
+当前已上线的内部测试地址：
+
+```text
+前端：https://zjsutranslationassistantfront.vercel.app/
+后端：https://zjsutranslationassistant.vercel.app/
+```
+
 ## 1. 部署顺序
 
 推荐顺序：
@@ -165,7 +172,9 @@ VITE_API_BASE_URL=https://your-backend-project.vercel.app
 注意：
 
 - 不要在末尾加 `/api`。
+- 推荐也不要在末尾加 `/`，即使用 `https://your-backend-project.vercel.app`。
 - 前端代码会自动请求 `${VITE_API_BASE_URL}/api/...`。
+- 当前代码已经会自动去掉末尾 `/`，但环境变量保持干净可以减少部署排障成本。
 
 ### 3.3 检查前端
 
@@ -207,7 +216,7 @@ Render 的环境变量配置方式与 Vercel 后端相同。
 AI_PROVIDER=mock
 ```
 
-当需要测试真实模型时，在 Render 后端环境变量中设置：
+当需要测试真实模型时，在 Vercel 后端项目环境变量中设置：
 
 ```env
 AI_PROVIDER=openai
@@ -219,7 +228,77 @@ OPENAI_MODEL=gpt-5-mini
 
 如果配置正确，前端右侧 AI 服务状态会从“演示模式”变为“真实模型”。
 
-## 6. 小范围内部测试建议
+注意事项：
+
+- `OPENAI_API_KEY` 只配置在后端项目，不能放到前端项目。
+- 环境变量修改后需要重新部署后端。
+- 先用少量样例测试快速翻译、深度翻译和润色，确认费用、速度和输出质量都可接受。
+
+## 6. 已验证的线上配置
+
+当前线上内部测试配置：
+
+```text
+后端项目：zjsutranslationassistant
+后端域名：https://zjsutranslationassistant.vercel.app
+前端项目：zjsutranslationassistantfront
+前端域名：https://zjsutranslationassistantfront.vercel.app
+```
+
+后端环境变量：
+
+```env
+AI_PROVIDER=mock
+ALLOWED_ORIGINS=["http://localhost:5173","https://zjsutranslationassistantfront.vercel.app"]
+```
+
+前端环境变量：
+
+```env
+VITE_API_BASE_URL=https://zjsutranslationassistant.vercel.app
+```
+
+已验证：
+
+```text
+GET  https://zjsutranslationassistant.vercel.app/api/status
+POST https://zjsutranslationassistant.vercel.app/api/translate
+```
+
+浏览器跨域响应中应包含：
+
+```text
+access-control-allow-origin: https://zjsutranslationassistantfront.vercel.app
+```
+
+### 6.1 `Failed to fetch` 排障记录
+
+曾出现的问题：
+
+```text
+前端页面可打开，但 AI 状态不显示，快速翻译报 Failed to fetch。
+```
+
+原因：
+
+```text
+前端环境变量曾写成 https://zjsutranslationassistant.vercel.app/
+旧版前端代码直接拼接 /api/translate，导致请求地址变成 //api/translate。
+Vercel 对双斜杠路径返回 308 重定向，浏览器跨域 POST 因此失败。
+```
+
+修复：
+
+- 前端环境变量改为不带末尾斜杠。
+- 代码中新增 API base URL 归一化逻辑，自动去除末尾 `/`。
+
+对应提交：
+
+```text
+c87bec9 fix: normalize frontend api base url
+```
+
+## 7. 小范围内部测试建议
 
 第一轮测试目标不是验证模型质量，而是验证产品流程：
 
@@ -247,7 +326,7 @@ OPENAI_MODEL=gpt-5-mini
 9. 导出学习报告。
 10. 填写反馈表。
 
-## 7. 何时再考虑买服务器
+## 8. 何时再考虑买服务器
 
 如果出现以下情况，再考虑购买服务器：
 

@@ -754,6 +754,21 @@ python3 -m compileall backend/app
 | `AI_PROVIDER` | 后端平台 | 初期为 `mock`，真实模型为 `openai` |
 | `OPENAI_API_KEY` | 后端平台 | 仅真实模型模式需要 |
 
+当前已验证的线上内部测试地址：
+
+| 服务 | 地址 |
+|---|---|
+| 前端 | `https://zjsutranslationassistantfront.vercel.app/` |
+| 后端 | `https://zjsutranslationassistant.vercel.app/` |
+
+当前线上后端仍使用 `mock` provider，适合验证产品流程。后端 `/api/status` 与 `/api/translate` 已验证可从前端域名跨域访问，响应头包含：
+
+```text
+access-control-allow-origin: https://zjsutranslationassistantfront.vercel.app
+```
+
+前端 API 客户端会对 `VITE_API_BASE_URL` 做末尾斜杠归一化，避免环境变量写成 `https://domain.vercel.app/` 后拼出 `//api/...` 并触发 Vercel 308 重定向。
+
 当前前端单元测试使用 Vitest，已覆盖：
 
 - `frontend/src/utils/date.js`：日期 key、缺省日期展示、今日条目统计。

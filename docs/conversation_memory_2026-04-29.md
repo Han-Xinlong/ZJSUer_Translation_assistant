@@ -1155,3 +1155,137 @@ python3 -m compileall backend/app backend/server.py
 - 翻译 mock 流程
 - 载入演示数据
 - 导出报告
+
+## 19. 2026-04-30 Vercel 前后端线上打通记录
+
+用户完成 Vercel 前后端部署后，提供了两个线上服务：
+
+- 后端：`https://zjsutranslationassistant.vercel.app/`
+- 前端：`https://zjsutranslationassistantfront.vercel.app/`
+
+### 19.1 后端验证结果
+
+用户先在浏览器验证后端接口返回正常。随后本轮继续通过脚本模拟浏览器跨域请求，确认：
+
+```text
+GET https://zjsutranslationassistant.vercel.app/api/status
+POST https://zjsutranslationassistant.vercel.app/api/translate
+```
+
+均可返回 `200`。
+
+后端 CORS 响应中包含：
+
+```text
+access-control-allow-origin: https://zjsutranslationassistantfront.vercel.app
+```
+
+说明后端部署和跨域配置均已生效。
+
+当前后端环境变量：
+
+```env
+AI_PROVIDER=mock
+ALLOWED_ORIGINS=["http://localhost:5173","https://zjsutranslationassistantfront.vercel.app"]
+```
+
+当前前端环境变量：
+
+```env
+VITE_API_BASE_URL=https://zjsutranslationassistant.vercel.app
+```
+
+### 19.2 `Failed to fetch` 问题定位
+
+用户反馈：
+
+- 前端页面可以打开。
+- 右侧没有看到“演示模式”。
+- 点击快速翻译报错 `Failed to fetch`。
+
+定位过程：
+
+- 检查前端线上 HTML 和 JS 构建产物。
+- 确认前端确实已经写入后端地址。
+- 发现线上构建中的后端地址为 `https://zjsutranslationassistant.vercel.app/`，末尾带 `/`。
+- 旧版代码直接拼接 `/api/status`、`/api/translate`，导致请求变成 `//api/status` 和 `//api/translate`。
+- Vercel 对双斜杠路径返回 `308 Permanent Redirect`，浏览器跨域 POST 因此表现为 `Failed to fetch`。
+
+### 19.3 修复内容
+
+修改：
+
+- `frontend/src/api/client.js`
+- `frontend/src/api/client.test.js`
+
+新增：
+
+- `buildApiUrl(path, apiBase = API_BASE)`
+
+作用：
+
+- 自动去掉 `VITE_API_BASE_URL` 末尾多余 `/`。
+- 避免拼出 `//api/...`。
+- 增加单元测试覆盖无 base、有单个尾斜杠、有多个尾斜杠三种情况。
+
+对应提交：
+
+```text
+c87bec9 fix: normalize frontend api base url
+```
+
+该提交已推送到远端 `origin/main`，Vercel 前端随后自动重新部署。线上前端 JS 已切换到新构建。
+
+### 19.4 验证结果
+
+本地验证：
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+```
+
+结果：
+
+- 前端 Vitest：4 个测试文件，14 个测试用例全部通过。
+- 前端生产构建通过。
+
+线上验证：
+
+```text
+GET /api/status -> 200
+POST /api/translate -> 200
+```
+
+mock 翻译返回示例：
+
+```json
+{
+  "mode": "quick",
+  "translation": "[Quick translation placeholder] 你好，我想练习英语写作。",
+  "provider": "mock"
+}
+```
+
+用户随后重新访问线上前端并确认功能成功。
+
+### 19.5 文档维护
+
+本轮同步更新：
+
+- `docs/deployment.md`
+- `docs/technical_documentation.md`
+- `docs/conversation_memory_2026-04-29.md`
+
+记录线上服务地址、已验证环境变量、CORS 排障结果、`Failed to fetch` 原因和后续接入真实模型的注意事项。
+
+### 19.6 下一步建议
+
+下一步可以真正接入 AI，而不是继续使用 mock：
+
+1. 在后端 Vercel 项目设置 `AI_PROVIDER=openai`。
+2. 在后端 Vercel 项目设置 `OPENAI_API_KEY`。
+3. 保持 `OPENAI_MODEL=gpt-5-mini` 或根据模型可用性调整。
+4. 重新部署后端。
+5. 打开前端，确认右侧 AI 服务状态从“演示模式”变成“真实模型”。
+6. 用少量样例测试快速翻译、深度翻译和润色，评估输出质量、速度和费用。
