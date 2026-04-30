@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getStatus } from "./client.js";
+import { buildApiUrl, getStatus } from "./client.js";
 
 describe("api client", () => {
   afterEach(() => {
@@ -27,6 +27,12 @@ describe("api client", () => {
       message: "Mock provider is active. No API key is required."
     });
     expect(fetch).toHaveBeenCalledWith("/api/status");
+  });
+
+  it("builds API URLs without duplicate slashes", () => {
+    expect(buildApiUrl("/api/status")).toBe("/api/status");
+    expect(buildApiUrl("/api/status", "https://example.com/")).toBe("https://example.com/api/status");
+    expect(buildApiUrl("/api/status", "https://example.com///")).toBe("https://example.com/api/status");
   });
 
   it("surfaces status request errors", async () => {

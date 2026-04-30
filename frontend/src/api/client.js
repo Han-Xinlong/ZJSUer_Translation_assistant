@@ -1,7 +1,11 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
+export function buildApiUrl(path, apiBase = API_BASE) {
+  return `${apiBase.replace(/\/+$/, "")}${path}`;
+}
+
 export async function getStatus() {
-  const response = await fetch(`${API_BASE}/api/status`);
+  const response = await fetch(buildApiUrl("/api/status"));
 
   if (!response.ok) {
     throw new Error(await readError(response, "Failed to fetch service status"));
@@ -11,7 +15,7 @@ export async function getStatus() {
 }
 
 export async function translate(payload) {
-  const response = await fetch(`${API_BASE}/api/translate`, {
+  const response = await fetch(buildApiUrl("/api/translate"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -27,7 +31,7 @@ export async function translate(payload) {
 }
 
 export async function polish(payload) {
-  const response = await fetch(`${API_BASE}/api/polish`, {
+  const response = await fetch(buildApiUrl("/api/polish"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
