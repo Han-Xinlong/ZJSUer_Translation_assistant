@@ -490,3 +490,80 @@ python3 -m compileall backend/app
 2. 为 `storage.js` 和学习统计逻辑增加单元测试，防止后续改动破坏历史记录、今日目标、连续天数。
 3. 增加真实模型调试面板或后端健康状态提示，让用户知道当前是 mock 还是真实 AI。
 4. 设计更正式的 GitHub README 首屏，包括产品截图、快速体验、功能清单和答辩材料入口。
+
+## 12. 2026-04-30 组件化重构记录
+
+用户继续要求以资深全栈工程师和 AI 工程师身份推进项目。根据上一轮建议，本轮优先处理前端可维护性问题：拆分 `frontend/src/App.jsx`。
+
+### 12.1 重构目标
+
+本轮目标不是改变用户可见功能，而是降低后续开发风险：
+
+- 让 `App.jsx` 从大而全的页面文件回到“状态编排层”。
+- 把侧边栏、写作台、历史详情、右侧复盘、集合列表、社群视图拆成独立组件。
+- 把日期格式化和学习报告生成从页面组件中抽离到工具函数。
+- 保持现有功能行为不变。
+
+### 12.2 新增前端组件
+
+新增：
+
+- `frontend/src/components/Sidebar.jsx`
+- `frontend/src/components/WorkspaceView.jsx`
+- `frontend/src/components/CorpusPanel.jsx`
+- `frontend/src/components/CollectionView.jsx`
+- `frontend/src/components/HistoryDetail.jsx`
+- `frontend/src/components/CommunityView.jsx`
+- `frontend/src/components/InsightPanel.jsx`
+
+组件职责：
+
+- `Sidebar`：左侧导航和品牌区。
+- `WorkspaceView`：写作台、目标语言、翻译/润色/语音/沉浸按钮、AI 输出和推荐语料。
+- `CorpusPanel`：推荐语料卡片。
+- `CollectionView`：表达库和错题库的通用展示。
+- `HistoryDetail`：历史复盘和初稿/译文对比。
+- `CommunityView`：社群互学内容。
+- `InsightPanel`：右侧今日复盘、最近记录和演示工具。
+
+### 12.3 新增工具模块
+
+新增：
+
+- `frontend/src/utils/date.js`
+- `frontend/src/utils/report.js`
+
+职责：
+
+- `date.js`：`formatDate`、`countTodayItems`、`toDateKey`。
+- `report.js`：`buildLearningReport`，负责 Markdown 学习报告生成。
+
+### 12.4 文档同步
+
+更新：
+
+- `docs/technical_documentation.md`
+
+同步记录新的前端目录结构、组件职责和工具层职责，并将“拆分 App.jsx”从后续计划调整为已完成的第一轮组件化。
+
+### 12.5 验证与提交
+
+已验证：
+
+```bash
+npm --prefix frontend run build
+python3 -m compileall backend/app
+```
+
+对应提交：
+
+```text
+7eb75f0 refactor: split frontend workspace components
+```
+
+### 12.6 下一步建议
+
+下一轮可以继续做两件更工程化的事：
+
+1. 增加 Vitest，优先测试 `utils/date.js`、`utils/report.js`、`utils/storage.js`。
+2. 增加后端 `/api/status` 或前端健康状态条，让用户清楚当前使用的是 mock provider 还是真实 AI provider。
