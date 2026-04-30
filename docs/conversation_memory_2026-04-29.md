@@ -952,3 +952,118 @@ python3 -m compileall backend/app
 1. 增加 Playwright。
 2. 覆盖页面打开、AI 状态可见、载入演示数据、学习档案展示、历史详情跳转等关键链路。
 3. 将 Playwright 接入 GitHub Actions，形成“单元测试 + API 测试 + 端到端测试”的完整护栏。
+
+## 17. 2026-04-30 托管平台部署准备记录
+
+用户提出：项目已经进入小范围内部测试前，是否应该考虑部署上线；用户愿意购买服务器。参赛导师判断：当前阶段不建议立刻买服务器，先采用托管平台完成最小可用上线，满足内部测试和答辩展示。
+
+决策：
+
+- 前端部署到 Vercel。
+- 后端部署到 Render。
+- 初期继续使用 `mock` 模式。
+- 测试流程稳定后再切换 `AI_PROVIDER=openai`。
+- 等内部测试证明有真实访问需求，再考虑购买云服务器。
+
+### 17.1 新增部署配置
+
+新增：
+
+- `render.yaml`
+- `frontend/vercel.json`
+- `frontend/.env.example`
+- `docs/deployment.md`
+
+`render.yaml` 配置：
+
+- 服务类型：Web Service。
+- Runtime：Python。
+- Root Directory：`backend`。
+- Plan：`free`。
+- Build Command：`pip install -r requirements.txt`。
+- Start Command：`uvicorn app.main:app --host 0.0.0.0 --port $PORT`。
+- Health Check：`/api/health`。
+- 默认 `AI_PROVIDER=mock`。
+- `ALLOWED_ORIGINS` 和 `OPENAI_API_KEY` 使用 `sync: false`，不写入仓库。
+
+`frontend/vercel.json` 配置：
+
+- Framework：Vite。
+- Install Command：`npm ci`。
+- Build Command：`npm run build`。
+- Output Directory：`dist`。
+
+`frontend/.env.example`：
+
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+### 17.2 新增线上部署指南
+
+新增：
+
+- `docs/deployment.md`
+
+内容包括：
+
+- 为什么先用 Vercel + Render。
+- 后端 Render 部署步骤。
+- 前端 Vercel 部署步骤。
+- `VITE_API_BASE_URL` 配置方式。
+- `ALLOWED_ORIGINS` 配置方式。
+- mock 模式检查方法。
+- 切换真实 OpenAI 的时机和环境变量。
+- 小范围内部测试建议。
+- 何时再考虑购买服务器。
+
+### 17.3 文档同步
+
+更新：
+
+- `README.md`
+- `docs/technical_documentation.md`
+
+README 新增“线上部署”入口，指向 `docs/deployment.md`。
+
+技术文档新增“托管平台部署”章节，记录：
+
+- Vercel 前端。
+- Render 后端。
+- 关键环境变量。
+- 部署配置文件位置。
+
+### 17.4 验证结果
+
+提交前已验证：
+
+```bash
+npm --prefix frontend test
+npm --prefix frontend run build
+cd backend && .venv/bin/python -m pytest
+python3 -m compileall backend/app
+```
+
+结果：
+
+- 前端 Vitest：4 个测试文件，13 个测试用例全部通过。
+- 后端 pytest：6 个测试用例全部通过。
+- 前端生产构建通过。
+- 后端 Python 语法检查通过。
+
+对应提交：
+
+```text
+cc07acb chore: add managed deployment setup
+```
+
+### 17.5 下一步建议
+
+下一轮建议进入真实托管平台操作：
+
+1. 用户登录 Render，按 `docs/deployment.md` 创建 Blueprint。
+2. 拿到 Render 后端 URL。
+3. 用户登录 Vercel，导入 GitHub 仓库并设置 Root Directory 为 `frontend`。
+4. 设置 `VITE_API_BASE_URL` 为 Render 后端 URL。
+5. 拿到 Vercel 前端 URL 后，回 Render 设置 `ALLOWED_ORIGINS`。
+6. 打开线上前端，完成一轮内部测试演示链路。
