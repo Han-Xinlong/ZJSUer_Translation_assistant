@@ -200,7 +200,14 @@ http://localhost:5173
 bash scripts/dev_backend.sh
 ```
 
-后端默认运行在 `http://localhost:8000`，健康检查接口为 `GET /api/health`。脚本会优先使用 `python3.10` 创建虚拟环境；如果本机暂未安装 Python 3.10，则回退到 `python3`。
+后端默认运行在 `http://localhost:8000`。
+
+常用检查接口：
+
+- `GET /api/health`：基础健康检查。
+- `GET /api/status`：查看当前 AI Provider、模型和配置状态。
+
+脚本会优先使用 `python3.10` 创建虚拟环境；如果本机暂未安装 Python 3.10，则回退到 `python3`。
 
 ### 启动前端
 
@@ -228,7 +235,7 @@ OPENAI_API_KEY=your_api_key
 OPENAI_MODEL=gpt-5-mini
 ```
 
-配置完成后重新启动后端即可。当前后端使用 OpenAI Responses API，并通过 Prompt 要求模型返回 JSON，方便前端稳定展示翻译、审校和润色结果。
+配置完成后重新启动后端即可。当前后端使用 OpenAI Responses API，并通过 Prompt 要求模型返回 JSON，方便前端稳定展示翻译、审校和润色结果。前端右侧会展示当前是 `mock` 演示模式还是真实模型模式。
 
 ## License
 

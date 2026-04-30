@@ -10,11 +10,22 @@ function InsightPanel({
   onLoadHistory,
   recentHistory,
   reviewCount,
+  serviceStatus,
   todayProgress
 }) {
+  const statusTone = getStatusTone(serviceStatus);
+
   return (
     <aside className="insight-panel" aria-label="成长概览">
       <h2>今日复盘</h2>
+      <section className={`service-status ${statusTone}`} aria-label="AI 服务状态">
+        <div>
+          <strong>{getStatusTitle(serviceStatus)}</strong>
+          <span>{serviceStatus.provider}</span>
+        </div>
+        <p>{serviceStatus.message}</p>
+        {serviceStatus.model && <small>Model: {serviceStatus.model}</small>}
+      </section>
       <div className="stat">
         <strong>{expressionCount}</strong>
         <span>累计表达</span>
@@ -64,6 +75,35 @@ function InsightPanel({
       </section>
     </aside>
   );
+}
+
+function getStatusTitle(serviceStatus) {
+  if (serviceStatus.status === "checking") {
+    return "检查中";
+  }
+  if (serviceStatus.status === "offline") {
+    return "后端离线";
+  }
+  if (!serviceStatus.configured) {
+    return "配置待完善";
+  }
+  if (serviceStatus.provider === "mock") {
+    return "演示模式";
+  }
+  return "真实模型";
+}
+
+function getStatusTone(serviceStatus) {
+  if (serviceStatus.status === "checking") {
+    return "checking";
+  }
+  if (serviceStatus.status === "offline" || !serviceStatus.configured) {
+    return "warning";
+  }
+  if (serviceStatus.provider === "mock") {
+    return "mock";
+  }
+  return "ready";
 }
 
 export default InsightPanel;

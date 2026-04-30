@@ -703,6 +703,67 @@ textarea {
   font-size: 20px;
 }
 
+.service-status {
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+  margin-bottom: 12px;
+  padding: 12px;
+}
+
+.service-status div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.service-status strong {
+  font-size: 16px;
+}
+
+.service-status span {
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #344054;
+  font-size: 12px;
+  padding: 3px 8px;
+  text-transform: uppercase;
+}
+
+.service-status p,
+.service-status small {
+  color: #667085;
+  line-height: 1.5;
+}
+
+.service-status p {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.service-status small {
+  display: block;
+  font-size: 12px;
+}
+
+.service-status.ready {
+  border-color: #8fcfbd;
+  background: #f0fdfa;
+}
+
+.service-status.mock,
+.service-status.checking {
+  border-color: #b8c7da;
+  background: #f6f8fb;
+}
+
+.service-status.warning {
+  border-color: #f0c48a;
+  background: #fff8ed;
+}
+
 .stat {
   padding: 14px;
   margin-bottom: 12px;

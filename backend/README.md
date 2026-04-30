@@ -21,6 +21,15 @@ uvicorn app.main:app --reload
 
 The API will be available at `http://localhost:8000`.
 
+Useful checks:
+
+```bash
+curl http://localhost:8000/api/health
+curl http://localhost:8000/api/status
+```
+
+`/api/status` reports the active AI provider, model and whether required configuration is complete. It never returns API keys.
+
 ## AI Provider
 
 The backend runs in `mock` mode by default, so the product prototype works without API keys.

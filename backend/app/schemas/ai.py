@@ -13,6 +13,14 @@ class HealthResponse(BaseModel):
     status: str
 
 
+class StatusResponse(BaseModel):
+    status: str
+    provider: str
+    model: Optional[str] = None
+    configured: bool = True
+    message: str
+
+
 class TranslateRequest(BaseModel):
     text: str = Field(..., min_length=1)
     source_language: str = "auto"

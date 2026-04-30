@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { polish, translate } from "./api/client.js";
+import { getStatus, polish, translate } from "./api/client.js";
 import CollectionView from "./components/CollectionView.jsx";
 import CommunityView from "./components/CommunityView.jsx";
 import HistoryDetail from "./components/HistoryDetail.jsx";
@@ -58,6 +58,13 @@ function App() {
   const [selectedHistoryId, setSelectedHistoryId] = useState(() => history[0]?.id || null);
   const [activeAction, setActiveAction] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [serviceStatus, setServiceStatus] = useState({
+    status: "checking",
+    provider: "unknown",
+    model: null,
+    configured: false,
+    message: "正在检查 AI 服务状态..."
+  });
 
   const trimmedText = sourceText.trim();
   const isBusy = activeAction !== null;
@@ -119,6 +126,32 @@ function App() {
   useEffect(() => {
     saveObject(GOALS_KEY, goals);
   }, [goals]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    getStatus()
+      .then((status) => {
+        if (isMounted) {
+          setServiceStatus(status);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setServiceStatus({
+            status: "offline",
+            provider: "unknown",
+            model: null,
+            configured: false,
+            message: "后端服务未连接，请确认 backend 已启动。"
+          });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function handleTranslate() {
     if (!canSubmit) {
@@ -415,6 +448,7 @@ function App() {
           onLoadHistory={handleLoadHistory}
           recentHistory={recentHistory}
           reviewCount={reviewCount}
+          serviceStatus={serviceStatus}
           todayProgress={todayProgress}
         />
       </section>

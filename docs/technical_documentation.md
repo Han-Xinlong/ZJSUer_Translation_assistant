@@ -165,6 +165,7 @@ CSS 核心布局：
 | `activeView` | string | 当前中间视图 |
 | `selectedHistoryId` | string/null | 当前历史详情 |
 | `activeAction` | translate/polish/null | loading 状态 |
+| `serviceStatus` | object | AI 服务在线状态、Provider、模型和配置情况 |
 | `errorMessage` | string | 错误提示 |
 | `isImmersive` | boolean | 沉浸模式 |
 | `isListening` | boolean | 语音识别状态 |
@@ -532,8 +533,28 @@ Promise.all([
 | 方法 | 路径 | 功能 |
 |---|---|---|
 | GET | `/api/health` | 健康检查 |
+| GET | `/api/status` | AI 服务状态、Provider、模型和配置完整性 |
 | POST | `/api/translate` | 翻译 |
 | POST | `/api/polish` | 润色 |
+
+`/api/status` 响应示例：
+
+```json
+{
+  "status": "ok",
+  "provider": "mock",
+  "model": "mock",
+  "configured": true,
+  "message": "Mock provider is active. No API key is required."
+}
+```
+
+前端启动后会调用该接口，并在右侧“今日复盘”上方展示 AI 服务状态：
+
+- `演示模式`：当前使用 mock provider，不需要 API Key。
+- `真实模型`：当前使用真实模型 provider。
+- `配置待完善`：例如选择了 OpenAI 但缺少 `OPENAI_API_KEY`。
+- `后端离线`：前端无法连接后端。
 
 错误处理：
 
