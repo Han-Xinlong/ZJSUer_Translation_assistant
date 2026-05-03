@@ -15,8 +15,19 @@ class Settings(BaseSettings):
     openai_timeout_seconds: int = 60
     openai_max_output_tokens: int = 1200
 
+    compatible_api_key: Optional[str] = None
+    compatible_model: str = "deepseek-v4-flash"
+    compatible_base_url: str = "https://api.deepseek.com"
+    compatible_provider_name: str = "compatible"
+
+    deepseek_api_key: Optional[str] = None
+    deepseek_model: str = "deepseek-v4-flash"
+    deepseek_base_url: str = "https://api.deepseek.com"
+
     qianfan_api_key: Optional[str] = None
     dashscope_api_key: Optional[str] = None
+    dashscope_model: str = "qwen-plus"
+    dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     model_config = SettingsConfigDict(
         env_file=".env",

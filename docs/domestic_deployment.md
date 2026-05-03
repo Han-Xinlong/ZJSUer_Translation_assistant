@@ -422,16 +422,34 @@ AI_PROVIDER=mock
 等演示流程稳定后，再把后端切到真实模型：
 
 ```env
-AI_PROVIDER=openai
-OPENAI_API_KEY=your_api_key
-OPENAI_MODEL=gpt-5-mini
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your_api_key
+DEEPSEEK_MODEL=deepseek-v4-flash
 ```
 
-如果国内服务器直连 OpenAI 不稳定，可以保留 mock 作为比赛展示兜底，或者后续再接入通义千问、文心千帆等国内模型 Provider。当前仓库已经预留了：
+当前建议优先试 DeepSeek，原因是价格低、接入简单、对中文到英文翻译和润色的 MVP 验证足够。项目后端已支持 OpenAI-compatible Chat Completions Provider，因此也可以切换到阿里云百炼 DashScope：
 
 ```env
-QIANFAN_API_KEY=
+AI_PROVIDER=dashscope
 DASHSCOPE_API_KEY=
+DASHSCOPE_MODEL=qwen-plus
+```
+
+也可以接其他 OpenAI 兼容平台：
+
+```env
+AI_PROVIDER=compatible
+COMPATIBLE_API_KEY=your_api_key
+COMPATIBLE_MODEL=your-model
+COMPATIBLE_BASE_URL=https://provider.example.com/v1
+COMPATIBLE_PROVIDER_NAME=provider-name
+```
+
+腾讯云服务器上修改 `deploy/tencent.env` 后，只需要重建后端容器：
+
+```bash
+docker compose -f docker-compose.tencent.yml up --build -d backend gateway
+curl http://127.0.0.1/api/status
 ```
 
 ## 8. 常见问题

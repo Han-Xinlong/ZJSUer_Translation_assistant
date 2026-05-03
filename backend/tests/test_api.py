@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.main import app
 
 
@@ -23,6 +24,41 @@ def test_status_reports_default_mock_provider():
         "model": "mock",
         "configured": True,
         "message": "Mock provider is active. No API key is required.",
+    }
+
+
+def test_status_reports_deepseek_configuration(monkeypatch):
+    monkeypatch.setattr(settings, "ai_provider", "deepseek")
+    monkeypatch.setattr(settings, "deepseek_api_key", "test-key")
+    monkeypatch.setattr(settings, "deepseek_model", "deepseek-v4-flash")
+
+    response = client.get("/api/status")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "provider": "deepseek",
+        "model": "deepseek-v4-flash",
+        "configured": True,
+        "message": "DeepSeek provider is configured.",
+    }
+
+
+def test_status_reports_missing_compatible_key(monkeypatch):
+    monkeypatch.setattr(settings, "ai_provider", "compatible")
+    monkeypatch.setattr(settings, "compatible_api_key", None)
+    monkeypatch.setattr(settings, "compatible_model", "qwen-plus")
+    monkeypatch.setattr(settings, "compatible_provider_name", "custom-ai")
+
+    response = client.get("/api/status")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "degraded",
+        "provider": "compatible",
+        "model": "qwen-plus",
+        "configured": False,
+        "message": "Compatible provider is selected, but COMPATIBLE_API_KEY is missing.",
     }
 
 

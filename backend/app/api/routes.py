@@ -37,6 +37,30 @@ def service_status() -> StatusResponse:
             if configured
             else "OpenAI provider is selected, but OPENAI_API_KEY is missing."
         )
+    elif provider == "deepseek":
+        model = settings.deepseek_model
+        configured = bool(settings.deepseek_api_key)
+        message = (
+            "DeepSeek provider is configured."
+            if configured
+            else "DeepSeek provider is selected, but DEEPSEEK_API_KEY is missing."
+        )
+    elif provider == "dashscope":
+        model = settings.dashscope_model
+        configured = bool(settings.dashscope_api_key)
+        message = (
+            "DashScope provider is configured."
+            if configured
+            else "DashScope provider is selected, but DASHSCOPE_API_KEY is missing."
+        )
+    elif provider == "compatible":
+        model = settings.compatible_model
+        configured = bool(settings.compatible_api_key)
+        message = (
+            f"{settings.compatible_provider_name} provider is configured."
+            if configured
+            else "Compatible provider is selected, but COMPATIBLE_API_KEY is missing."
+        )
     elif provider == "mock":
         model = "mock"
         message = "Mock provider is active. No API key is required."
