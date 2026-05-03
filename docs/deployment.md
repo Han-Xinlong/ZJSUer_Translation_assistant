@@ -4,7 +4,7 @@
 
 - 前端：Vercel
 - 后端：Vercel FastAPI
-- AI Provider：初期使用 `mock`，测试流程稳定后再切换真实 OpenAI。
+- AI Provider：初期使用 `mock`，测试流程稳定后可切换 DeepSeek、OpenAI、DashScope 等真实模型。
 
 这样可以先获得一个可访问的 Web Demo，不需要立刻购买服务器，也不需要维护 Nginx、HTTPS、进程守护和安全组。
 
@@ -210,7 +210,7 @@ Health Check Path: /api/health
 
 Render 的环境变量配置方式与 Vercel 后端相同。
 
-## 5. 切换真实 OpenAI
+## 5. 切换真实模型
 
 内部测试第一阶段建议先保持：
 
@@ -218,7 +218,16 @@ Render 的环境变量配置方式与 Vercel 后端相同。
 AI_PROVIDER=mock
 ```
 
-当需要测试真实模型时，在 Vercel 后端项目环境变量中设置：
+当需要测试低成本真实模型时，推荐优先在后端项目环境变量中设置 DeepSeek：
+
+```env
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your_api_key
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+如需使用 OpenAI，也可以设置：
 
 ```env
 AI_PROVIDER=openai
@@ -232,7 +241,7 @@ OPENAI_MODEL=gpt-5-mini
 
 注意事项：
 
-- `OPENAI_API_KEY` 只配置在后端项目，不能放到前端项目。
+- 模型 API Key 只配置在后端项目，不能放到前端项目。
 - 环境变量修改后需要重新部署后端。
 - 先用少量样例测试快速翻译、深度翻译和润色，确认费用、速度和输出质量都可接受。
 

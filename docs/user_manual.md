@@ -1,8 +1,8 @@
 # 使用手册：随写随翻 AI 学习工具
 
-版本：MVP 初版  
+版本：MVP 初版 + 真实模型测试版
 适用对象：外语学习者、项目团队、指导教师、答辩评审  
-访问地址：本地开发环境 `http://127.0.0.1:5173/`
+访问地址：本地开发环境 `http://127.0.0.1:5173/`；国内体验地址 `http://62.234.13.61/`
 
 ## 1. 产品简介
 
@@ -53,9 +53,9 @@ http://127.0.0.1:5173/
 
 ### 2.3 默认模式
 
-系统默认使用 `mock` 模式，即使没有真实 AI Key 也能演示功能。
+系统默认使用 `mock` 模式，即使没有真实 AI Key 也能演示功能。当前国内体验服务器已切换为 DeepSeek 真实模型，右侧 AI 状态卡会显示 `真实模型`、provider 和 model。
 
-如果要启用真实 OpenAI：
+如果要在本地启用 DeepSeek：
 
 1. 复制环境变量文件：
 
@@ -66,12 +66,15 @@ cp backend/.env.example backend/.env
 2. 修改 `backend/.env`：
 
 ```env
-AI_PROVIDER=openai
-OPENAI_API_KEY=你的_API_Key
-OPENAI_MODEL=gpt-5-mini
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=你的_API_Key
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
 ```
 
 3. 重启后端。
+
+如果要切回无 Key 演示模式，把 `AI_PROVIDER` 改回 `mock`。
 
 ## 3. 页面总览
 
@@ -135,6 +138,13 @@ I want practice English writing today.
 |---|---|---|
 | 快速 | 查词、查短句、快速理解 | 速度优先，返回直接译文和简短建议 |
 | 深度 | 作业、正式表达、希望学习修改思路 | 初译 + 审校，返回译文、审校说明和学习建议 |
+
+注意：
+
+- “快速/深度”只影响“翻译”按钮。
+- “快速/深度”按钮本身不会立即调用 AI，需要点击“翻译”后生效。
+- “润色”按钮目前固定走润色流程，不受快速/深度切换影响。
+- 深度模式会调用两次模型，速度更慢，费用通常也高于快速模式，但更适合正式文本和学习复盘。
 
 ### 4.5 点击“翻译”
 
@@ -519,7 +529,7 @@ zjsuer-learning-report-2026-04-30.md
 
 ### 14.1 为什么显示的是 placeholder？
 
-因为后端默认使用 `mock` 模式。要使用真实模型，请配置 OpenAI API Key。
+因为后端处于 `mock` 模式。要使用真实模型，请配置 DeepSeek、OpenAI、DashScope 或其他兼容 Provider 的 API Key。当前腾讯云国内体验环境已切换为 DeepSeek，正常情况下不应再显示 placeholder。
 
 ### 14.2 为什么语音按钮不可用？
 
@@ -528,12 +538,14 @@ zjsuer-learning-report-2026-04-30.md
 - 浏览器不支持 Web Speech API。
 - 未授予麦克风权限。
 - 当前环境不支持语音识别。
+- 公网 HTTP 地址可能无法稳定使用麦克风或语音识别能力。
 
 解决方式：
 
 - 使用 Chrome。
 - 检查麦克风权限。
 - 继续使用文本输入。
+- 后续配置 HTTPS 后再把语音输入作为正式展示功能重点测试。
 
 ### 14.3 为什么今日目标会自动增加？
 
@@ -589,3 +601,5 @@ zjsuer-learning-report-2026-04-30.md
 - 增加多语言 Prompt 模板。
 - 增加教师端案例库。
 - 增加真实用户测试数据。
+- 增加快速/深度模式说明提示。
+- 接入 HTTPS 后完善语音输入体验。

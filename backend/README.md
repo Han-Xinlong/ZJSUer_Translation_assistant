@@ -34,13 +34,22 @@ curl http://localhost:8000/api/status
 
 The backend runs in `mock` mode by default, so the product prototype works without API keys.
 
-To enable real OpenAI calls:
+To enable real model calls:
 
 ```bash
 cp .env.example .env
 ```
 
-Then edit `.env`:
+For the current low-cost DeepSeek setup, edit `.env`:
+
+```env
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your_api_key
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+OpenAI remains supported:
 
 ```env
 AI_PROVIDER=openai

@@ -2,29 +2,43 @@
 
 ## Stage 1: Research and Prototype
 
-- Confirm target users and core workflows.
-- Build interactive writing workspace prototype.
-- Decide first target language pair and evaluation examples.
+- Status: completed.
+- Confirmed target users and core workflows.
+- Built interactive writing workspace prototype.
+- Decided first target language pair and evaluation examples.
 
 ## Stage 2: Core Application
 
-- Implement frontend and backend foundations.
-- Add quick translation workflow.
-- Add deep translation workflow with initial translation and review.
-- Add polishing workflow with change explanations.
-- Save local writing and revision history.
+- Status: completed.
+- Implemented frontend and backend foundations.
+- Added quick translation workflow.
+- Added deep translation workflow with initial translation and review.
+- Added polishing workflow with change explanations.
+- Saved local writing and revision history.
 
 ## Stage 3: Learning Records and Testing
 
-- Add expression bank and error bank.
-- Add draft vs final comparison.
-- Add learning heatmap and simple daily goals.
-- Run small-scale testing with foreign language learners.
+- Status: in progress.
+- Added expression bank and error bank.
+- Added draft vs final comparison.
+- Added learning heatmap and daily goals.
+- Added demo data, report export, frontend unit tests, backend API tests and GitHub Actions.
+- Deployed the domestic version to Tencent Cloud and switched it from mock mode to DeepSeek real model testing.
+- Next: run small-scale testing with foreign language learners and collect output quality feedback.
 
 ## Stage 4: Documentation and Delivery
 
-- Write user manual and technical documentation.
-- Prepare software copyright materials.
-- Summarize human-AI collaborative learning patterns.
-- Package materials for competitions and teaching practice.
+- Status: in progress.
+- User manual and technical documentation are available.
+- Domestic deployment guide, classmate quick start guide and project application draft are available.
+- Next: prepare software copyright materials.
+- Next: summarize human-AI collaborative learning patterns from real user testing.
+- Next: package materials for competitions and teaching practice.
 
+## Stage 5: Product Hardening
+
+- Build an evaluation sample set for quick translation, deep translation and polishing.
+- Compare quick/deep translation quality, latency and API cost.
+- Add lightweight UI hints explaining when to use quick mode and deep mode.
+- Add HTTPS before treating speech input as a formal public-demo feature.
+- Consider IndexedDB for larger local history and structured review records.

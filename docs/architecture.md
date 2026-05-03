@@ -33,7 +33,7 @@ User
 - API routes define stable contracts for the frontend.
 - Schemas keep request and response formats explicit.
 - Services orchestrate AI workflows and provider integrations.
-- Provider adapters isolate model vendors from product workflows. The first real adapter targets OpenAI Responses API, while `mock` remains available for local demos.
+- Provider adapters isolate model vendors from product workflows. Current adapters support `mock`, OpenAI Responses API, DeepSeek, DashScope and generic OpenAI-compatible Chat Completions services.
 - Data layer will support SQLite/local sync experiments.
 
 ## Data Principles

@@ -313,7 +313,7 @@ Domestic deployment smoke check passed.
 
 ### 4.8 当前腾讯云验证结果
 
-截至 2026-04-30，腾讯云轻量服务器部署已验证可用：
+截至 2026-05-03，腾讯云轻量服务器部署已验证可用，并已从 mock 切换到 DeepSeek 真实模型：
 
 ```text
 http://62.234.13.61/
@@ -322,7 +322,7 @@ http://62.234.13.61/
 已确认：
 
 - 浏览器直接访问根路径可以打开前端页面。
-- 点击“翻译”按钮可以正常返回 mock 翻译结果。
+- 点击“翻译”按钮可以正常返回真实模型结果。
 - 后端健康检查正常：
 
 ```bash
@@ -334,10 +334,10 @@ curl -i http://62.234.13.61/api/status
 
 ```json
 {"status":"ok"}
-{"status":"ok","provider":"mock","model":"mock","configured":true,"message":"Mock provider is active. No API key is required."}
+{"status":"ok","provider":"deepseek","model":"deepseek-v4-flash","configured":true,"message":"DeepSeek provider is configured."}
 ```
 
-当前仍是 `AI_PROVIDER=mock`，适合答辩、同学体验和国内网络稳定性演示。后续如果接入真实模型，需要更新 `deploy/tencent.env` 后重建后端容器。
+当前国内体验环境是 `AI_PROVIDER=deepseek`，适合进行真实翻译、润色和深度审校的小范围测试。若后续需要控制费用或应急演示，可以把 `deploy/tencent.env` 切回 `AI_PROVIDER=mock` 后重建后端容器。
 
 ### 4.9 更新部署
 

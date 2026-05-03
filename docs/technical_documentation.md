@@ -1,14 +1,14 @@
 # 技术文档：面向外语学习者的“随写随翻”AI工具
 
-版本：MVP 初版  
-最后更新：2026-04-29  
+版本：MVP 初版 + 真实模型测试版
+最后更新：2026-05-03
 仓库：`Han-Xinlong/ZJSUer_Translation_assistant`
 
 ## 1. 文档目的
 
 本文档面向项目开发者、指导教师、答辩评审和后续维护人员，说明“随写随翻”AI工具的技术架构、模块设计、数据流、前端页面细节、后端接口、AI工作流、数据持久化方案和后续演进方向。
 
-当前项目已完成从 0 到 1 的 MVP 初版，核心目标是验证 PPT 中提出的“轻量化 + 可复盘 + 会督促”的 AI 外语学习伙伴是否可落地。
+当前项目已完成从 0 到 1 的 MVP 初版，并已在腾讯云国内环境接入 DeepSeek 真实模型。核心目标是验证 PPT 中提出的“轻量化 + 可复盘 + 会督促”的 AI 外语学习伙伴是否可落地。
 
 ## 2. 总体架构
 
@@ -24,6 +24,9 @@ flowchart LR
   ORCH --> PROVIDER[AI Provider]
   PROVIDER --> MOCK[MockProvider]
   PROVIDER --> OPENAI[OpenAI Responses API]
+  PROVIDER --> COMPAT[OpenAI-compatible Chat Completions]
+  COMPAT --> DEEPSEEK[DeepSeek]
+  COMPAT --> DASHSCOPE[DashScope]
   FE --> CHART[ECharts 动态可视化]
 ```
 
@@ -34,7 +37,7 @@ flowchart LR
 | 前端轻量 | React 单页应用，页面直接进入写作台 | 拆分更多组件，支持路由 |
 | 后端服务化 | FastAPI 提供翻译/润色接口 | 增加用户、同步、日志接口 |
 | 数据本地化 | localStorage 保存历史、表达、错题、社群、目标 | 升级 IndexedDB |
-| AI 可替换 | Provider 抽象支持 mock/openai | 扩展通义、文心等 |
+| AI 可替换 | Provider 抽象支持 mock/openai/deepseek/dashscope/compatible | 扩展通义、文心等 |
 | 过程可复盘 | 历史详情保存初稿、结果、建议 | 增加版本 diff 高亮 |
 | 成长可视 | 7天趋势图、14天热力格 | 增加月度报告和导出 |
 
@@ -289,7 +292,7 @@ CSS：
 翻译结果包含：
 
 - 模式标题：快速翻译/深度翻译。
-- Provider 信息：mock/openai。
+- Provider 信息：mock/openai/deepseek/dashscope/compatible。
 - Model 信息。
 - 译文。
 - 审校说明。
@@ -639,6 +642,7 @@ Provider：
 
 - `MockProvider`
 - `OpenAIProvider`
+- `ChatCompletionsProvider`
 
 OpenAI 调用：
 
@@ -647,13 +651,36 @@ OpenAI 调用：
 - 默认模型：`gpt-5-mini`。
 - 要求模型返回 JSON。
 
+OpenAI-compatible Chat Completions 调用：
+
+- 用于 DeepSeek、DashScope 和其他兼容平台。
+- 请求路径：`/chat/completions`。
+- 默认 DeepSeek 模型：`deepseek-v4-flash`。
+- 默认 DashScope 模型：`qwen-plus`。
+- 请求中使用 `response_format: {"type": "json_object"}`，并由 Prompt 再约束返回结构。
+
 环境变量：
 
 ```env
 AI_PROVIDER=mock
+
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5-mini
 OPENAI_BASE_URL=https://api.openai.com/v1
+
+DEEPSEEK_API_KEY=
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+
+DASHSCOPE_API_KEY=
+DASHSCOPE_MODEL=qwen-plus
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+
+COMPATIBLE_API_KEY=
+COMPATIBLE_MODEL=your-model
+COMPATIBLE_BASE_URL=https://provider.example.com/v1
+COMPATIBLE_PROVIDER_NAME=provider-name
+
 OPENAI_TIMEOUT_SECONDS=60
 OPENAI_MAX_OUTPUT_TOKENS=1200
 ```
@@ -751,8 +778,11 @@ python3 -m compileall backend/app
 |---|---|---|
 | `VITE_API_BASE_URL` | Vercel 前端 | 后端地址，不带 `/api` |
 | `ALLOWED_ORIGINS` | 后端平台 | Vercel 前端地址，JSON 数组字符串 |
-| `AI_PROVIDER` | 后端平台 | 初期为 `mock`，真实模型为 `openai` |
-| `OPENAI_API_KEY` | 后端平台 | 仅真实模型模式需要 |
+| `AI_PROVIDER` | 后端平台 | `mock` / `openai` / `deepseek` / `dashscope` / `compatible` |
+| `OPENAI_API_KEY` | 后端平台 | OpenAI 模式需要 |
+| `DEEPSEEK_API_KEY` | 后端平台 | DeepSeek 模式需要 |
+| `DASHSCOPE_API_KEY` | 后端平台 | DashScope 模式需要 |
+| `COMPATIBLE_API_KEY` | 后端平台 | 通用 OpenAI-compatible Provider 需要 |
 
 当前已验证的线上内部测试地址：
 
@@ -761,13 +791,31 @@ python3 -m compileall backend/app
 | 前端 | `https://zjsutranslationassistantfront.vercel.app/` |
 | 后端 | `https://zjsutranslationassistant.vercel.app/` |
 
-当前线上后端仍使用 `mock` provider，适合验证产品流程。后端 `/api/status` 与 `/api/translate` 已验证可从前端域名跨域访问，响应头包含：
+Vercel 线上后端曾使用 `mock` provider 验证产品流程。后端 `/api/status` 与 `/api/translate` 已验证可从前端域名跨域访问，响应头包含：
 
 ```text
 access-control-allow-origin: https://zjsutranslationassistantfront.vercel.app
 ```
 
 前端 API 客户端会对 `VITE_API_BASE_URL` 做末尾斜杠归一化，避免环境变量写成 `https://domain.vercel.app/` 后拼出 `//api/...` 并触发 Vercel 308 重定向。
+
+当前国内腾讯云体验地址：
+
+```text
+http://62.234.13.61/
+```
+
+腾讯云后端已验证切换到 DeepSeek：
+
+```json
+{
+  "status": "ok",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "configured": true,
+  "message": "DeepSeek provider is configured."
+}
+```
 
 当前前端单元测试使用 Vitest，已覆盖：
 
@@ -779,6 +827,7 @@ access-control-allow-origin: https://zjsutranslationassistantfront.vercel.app
 
 - `GET /api/health`：基础健康检查。
 - `GET /api/status`：mock provider 状态。
+- `GET /api/status`：DeepSeek 和 compatible provider 配置状态。
 - `POST /api/translate`：mock 快速翻译。
 - `POST /api/translate`：mock 深度翻译与 prompt 链。
 - `POST /api/polish`：mock 润色。
@@ -791,7 +840,7 @@ access-control-allow-origin: https://zjsutranslationassistantfront.vercel.app
 | 数据仅本地保存 | localStorage 容量和结构能力有限 | 升级 IndexedDB |
 | 社群互学为本地版 | 暂无账号和多人同步 | 增加后端用户与同步 |
 | 语音识别依赖浏览器 | Safari/Chrome 支持差异明显 | 增加兼容提示和手动 fallback |
-| AI 真实效果未充分评测 | 当前默认 mock | 配置真实 Key 后做样例评估 |
+| AI 真实效果评测样本不足 | DeepSeek 已接入但尚未形成系统评测集 | 建立样例集并记录人工评分 |
 | 组件仍可继续细分 | `WorkspaceView` 和 `LearningDashboard` 后续可能继续增长 | 按结果区、图表区、演示工具继续拆分 |
 | 浏览器交互测试不足 | 已有工具函数单测，尚缺端到端交互覆盖 | 增加 Playwright |
 

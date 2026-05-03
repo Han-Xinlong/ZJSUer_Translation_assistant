@@ -21,7 +21,13 @@ https://github.com/Han-Xinlong/ZJSUer_Translation_assistant
 - 学习档案：查看今日目标、累计表达、连续学习和趋势图。
 - 社群互学：模拟把优秀表达分享到学习社区。
 
-后端默认使用 mock 模式，所以不需要配置真实 AI Key，也能完整体验产品流程。
+如果只是想马上体验线上版本，可以访问国内体验地址：
+
+```text
+http://62.234.13.61/
+```
+
+当前线上版本已接入 DeepSeek 真实模型。本地从 GitHub 跑项目时，后端默认使用 mock 模式，所以不需要配置真实 AI Key，也能完整体验产品流程。
 
 ## 第一步：准备环境
 
@@ -145,11 +151,11 @@ http://127.0.0.1:8000
 
 前端会把 `/api` 请求转发给后端。如果只启动了前端，没有启动后端，翻译和润色请求就无法完成。
 
-### 4. 需要 OpenAI API Key 吗？
+### 4. 需要 AI API Key 吗？
 
-不需要。当前项目后端默认是 mock 模式，会返回模拟的翻译、润色和审校结果，适合演示和课堂体验。
+本地体验不需要。当前项目后端默认是 mock 模式，会返回模拟的翻译、润色和审校结果，适合演示和课堂体验。
 
-如果后续要接入真实 AI 模型，可以参考 [backend/README.md](../backend/README.md)。
+如果后续要接入真实 AI 模型，例如 DeepSeek、OpenAI 或 DashScope，可以参考 [backend/README.md](../backend/README.md)。
 
 ## 推荐体验路线
 

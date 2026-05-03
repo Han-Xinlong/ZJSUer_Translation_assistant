@@ -77,7 +77,7 @@ ZJSUer Translation Assistant 不是一个复杂的专业翻译平台，而是聚
 
 ## 技术路线
 
-项目计划采用“前端轻量、后端服务化、数据本地化”的架构。
+项目采用“前端轻量、后端服务化、数据本地化”的架构，当前已完成 MVP、国内部署和真实 DeepSeek 模型初步接入。
 
 ### 前端
 
@@ -93,9 +93,10 @@ ZJSUer Translation Assistant 不是一个复杂的专业翻译平台，而是聚
 
 ### AI 模型协作
 
-- 支持接入通用大模型 API，如 GPT、文心、通义等。
+- 支持接入通用大模型 API，如 DeepSeek、OpenAI、通义千问等。
 - 深度模式采用“初译 + 审校”的协作流程。
-- 后续可根据语言方向和任务类型优化 Prompt 模板。
+- 已内置 `mock`、OpenAI Responses API、DeepSeek、DashScope 和通用 OpenAI-compatible Provider。
+- 后续可根据语言方向和任务类型继续优化 Prompt 模板。
 
 ### 数据存储
 
@@ -218,7 +219,7 @@ bash scripts/dev_frontend.sh
 
 前端默认运行在 `http://localhost:5173`，开发环境会将 `/api` 请求代理到后端服务。
 
-> 当前仓库处于从 0 到 1 的初始化阶段，已完成基础目录、前端工作台雏形、FastAPI 服务骨架和 Prompt 模板占位。后续将继续补充真实模型调用、富文本编辑、本地学习数据存储和可视化能力。
+> 当前仓库已完成从 0 到 1 的 MVP：前端工作台、FastAPI 后端、真实模型 Provider、学习记录、表达库、错题库、学习档案、演示工具、测试和国内 Docker 部署均已具备初版。
 
 ### 验证项目
 
@@ -236,11 +237,11 @@ python3 -m compileall backend/app
 
 ### 线上部署
 
-小范围内部测试阶段推荐优先使用 Vercel，不需要先购买服务器：
+小范围内部测试阶段可以使用 Vercel，不需要先购买服务器：
 
 - 前端部署到 Vercel。
 - 后端也部署到 Vercel FastAPI。
-- 初期使用 `mock` 模式，流程稳定后再切换真实 OpenAI。
+- 初期使用 `mock` 模式，流程稳定后可切换真实模型。
 
 详细步骤见：
 
@@ -257,9 +258,17 @@ python3 -m compileall backend/app
 
 - [国内可靠访问部署方案](docs/domestic_deployment.md)
 
+当前国内体验地址：
+
+```text
+http://62.234.13.61/
+```
+
+当前腾讯云后端已切换到 DeepSeek 真实模型，可通过 `/api/status` 查看 provider/model 状态。
+
 ### 启用真实 AI 调用
 
-后端默认使用 `mock` 模式，便于无密钥演示。若要接入 OpenAI：
+后端默认使用 `mock` 模式，便于无密钥演示。若要接入低成本真实模型，当前推荐先使用 DeepSeek：
 
 ```bash
 cp backend/.env.example backend/.env
@@ -268,12 +277,29 @@ cp backend/.env.example backend/.env
 然后在 `backend/.env` 中配置：
 
 ```env
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your_api_key
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+也可使用 OpenAI：
+
+```env
 AI_PROVIDER=openai
 OPENAI_API_KEY=your_api_key
 OPENAI_MODEL=gpt-5-mini
 ```
 
-配置完成后重新启动后端即可。当前后端使用 OpenAI Responses API，并通过 Prompt 要求模型返回 JSON，方便前端稳定展示翻译、审校和润色结果。前端右侧会展示当前是 `mock` 演示模式还是真实模型模式。
+或者使用阿里云百炼 DashScope：
+
+```env
+AI_PROVIDER=dashscope
+DASHSCOPE_API_KEY=your_api_key
+DASHSCOPE_MODEL=qwen-plus
+```
+
+配置完成后重新启动后端即可。后端通过 Prompt 要求模型返回 JSON，方便前端稳定展示翻译、审校和润色结果。前端右侧会展示当前是 `mock` 演示模式还是真实模型模式。
 
 ## License
 

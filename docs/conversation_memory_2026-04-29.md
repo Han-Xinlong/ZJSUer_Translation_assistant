@@ -1562,3 +1562,211 @@ AI_PROVIDER=mock
 - 浙江外国语学院教育学院 2025 年国家级大学生创新创业训练计划项目新闻。
 
 说明：Word 文件由 `docs/innovation_project_application_2026.html` 通过 `textutil` 转换生成；后续如需继续改申报书，优先修改 HTML 源稿后再导出 docx。
+
+## 24. 2026-05-03 真实 AI 接入与腾讯云验证记录
+
+用户继续要求以大创比赛指导老师、国内顶尖全栈工程师和 AI 工程师身份推进项目。当前项目已经具备测试前版本、腾讯云国内体验地址和 mock 演示能力，本轮目标是把之前 mock 掉的翻译、润色功能正式接入便宜的真实 AI API。
+
+### 24.1 接入策略判断
+
+判断：可以进入真实 AI 小流量测试阶段。
+
+原因：
+
+- 前端核心功能、后端 API、Docker 部署和腾讯云访问链路已跑通。
+- `/api/status` 已能显示当前 Provider 和模型状态，便于区分 mock 与真实模型。
+- 后端已有 `AIOrchestrator`、Prompt 模板和 Provider 抽象，不需要推翻架构。
+- 大创项目下一阶段需要真实输出质量、费用和速度数据，继续停留在 mock 不利于用户测试和答辩材料。
+
+优先推荐 DeepSeek API：
+
+- 价格相对低，适合学生项目和小范围测试。
+- 支持 OpenAI-compatible Chat Completions 调用方式。
+- 对中文、英文翻译和润色 MVP 验证足够。
+
+### 24.2 后端 Provider 扩展
+
+新增支持：
+
+```env
+AI_PROVIDER=deepseek
+AI_PROVIDER=dashscope
+AI_PROVIDER=compatible
+```
+
+涉及文件：
+
+- `backend/app/core/config.py`
+- `backend/app/services/ai_provider.py`
+- `backend/app/api/routes.py`
+- `backend/tests/test_api.py`
+- `backend/.env.example`
+- `deploy/tencent.env.example`
+- `backend/README.md`
+- `docs/domestic_deployment.md`
+
+新增 `ChatCompletionsProvider`，用于 DeepSeek、DashScope 和其他 OpenAI-compatible 服务。
+
+DeepSeek 推荐配置：
+
+```env
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your_api_key
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+DashScope 备选配置：
+
+```env
+AI_PROVIDER=dashscope
+DASHSCOPE_API_KEY=your_api_key
+DASHSCOPE_MODEL=qwen-plus
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+```
+
+通用兼容配置：
+
+```env
+AI_PROVIDER=compatible
+COMPATIBLE_API_KEY=your_api_key
+COMPATIBLE_MODEL=your-model
+COMPATIBLE_BASE_URL=https://provider.example.com/v1
+COMPATIBLE_PROVIDER_NAME=provider-name
+```
+
+### 24.3 验证与提交
+
+本地验证：
+
+```bash
+cd backend && .venv/bin/python -m pytest
+python3 -m compileall backend/app backend/server.py
+npm --prefix frontend test -- --run
+npm --prefix frontend run build
+git diff --check
+```
+
+结果：
+
+- 后端 pytest：8 个测试用例全部通过。
+- 前端 Vitest：4 个测试文件，15 个测试用例全部通过。
+- 前端生产构建通过。
+- 后端 Python 编译通过。
+- diff 空白检查通过。
+
+对应提交：
+
+```text
+e84a763 feat: add openai-compatible ai providers
+```
+
+该提交已推送到远端 `origin/main`。
+
+### 24.4 腾讯云服务器切换真实模型
+
+用户已购买 DeepSeek API Key。为避免服务器本地临时改动阻塞 `git pull`，曾指导用户先备份并 stash 服务器工作区改动：
+
+```bash
+git diff > server-local-before-deepseek.patch
+git stash push -u -m "server local changes before deepseek pull"
+git pull --ff-only
+```
+
+随后用户在腾讯云服务器 `deploy/tencent.env` 中配置：
+
+```env
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=用户自己的 DeepSeek API Key
+DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+重建后端：
+
+```bash
+docker compose -f docker-compose.tencent.yml up --build -d backend gateway
+```
+
+用户执行：
+
+```bash
+curl http://127.0.0.1/api/status
+```
+
+返回：
+
+```json
+{
+  "status": "ok",
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "configured": true,
+  "message": "DeepSeek provider is configured."
+}
+```
+
+说明腾讯云后端已正式从 mock 切换为真实 DeepSeek 模型。
+
+### 24.5 线上初步测试
+
+用户在国内体验地址完成初步测试：
+
+```text
+http://62.234.13.61/
+```
+
+结果：
+
+- 快速翻译可返回真实模型结果。
+- 深度翻译可返回真实模型结果。
+- 润色功能初步正常。
+- 右侧 AI 状态卡可识别真实模型。
+
+当前国内体验地址已从“mock 演示版”升级为“真实 AI 可体验版”。
+
+### 24.6 快速模式与深度模式解释
+
+已向用户解释：
+
+- `快速` 和 `深度` 是翻译模式切换按钮，本身不会立即调用 AI，需要点击“翻译”后生效。
+- 快速模式：后端调用一次 AI，使用 `quick_translate.md`，适合短句、日常表达、即时查询；速度更快，成本更低。
+- 深度模式：后端调用两次 AI，先执行 `deep_translate_initial.md` 初译，再执行 `deep_translate_review.md` 审校，适合课程作业、正式邮件、答辩材料等高质量场景；速度更慢，成本约接近快速模式两倍，但会产生审校说明和学习建议。
+- 润色按钮目前不受快速/深度切换影响，固定走 `polish.md`。
+
+产品话术：
+
+```text
+快速模式解决“我现在想知道这句话怎么说”。
+深度模式解决“我想知道这句话怎样翻得更地道，以及为什么这样改”。
+```
+
+### 24.7 按钮功能检视
+
+已初步核对前端源码：
+
+- `快速 / 深度`：翻译模式切换，已实现。
+- `目标语言`：English / Japanese / Korean / Chinese，已实现。
+- `翻译`：真实 DeepSeek 已接入，已实现。
+- `润色`：真实 DeepSeek 已接入，已实现。
+- `沉浸`：切换写作区布局，已实现。
+- `收藏表达`：写入表达库，已实现。
+- `分享社群`：写入本地社群互学，已实现。
+- `加入错题`：写入错题库，已实现。
+- `表达库 / 错题库 / 历史详情 / 学习档案 / 社群互学`：页面切换和数据展示已实现。
+- `导出报告 / 载入演示数据 / 清空全部数据 / 清空历史`：已实现。
+
+需要注意：
+
+- `语音` 按钮依赖浏览器 Web Speech API 和麦克风权限。当前国内地址仍是普通 `http://公网IP`，公网 HTTP 下部分浏览器会限制麦克风/语音识别能力。建议后续有备案域名和 HTTPS 后再作为正式功能重点展示。
+- 快速/深度的区别目前主要体现在后端流程和输出内容，前端后续可增加轻量提示，让同学一眼理解“深度更慢但有审校说明”。
+
+### 24.8 下一步建议
+
+下一阶段重点：
+
+1. 更新 README、用户手册、技术文档、部署文档和申报书源稿，把“mock 演示版”改为“真实 DeepSeek 初步接入并验证”。
+2. 建立小规模测试样例集，收集快速翻译、深度翻译、润色三类输出质量。
+3. 增加前端对快速/深度模式的说明提示。
+4. 统计模型调用费用，形成大创中期检查可用的“真实模型成本评估”。
+5. 后续接入 HTTPS 后再系统测试语音输入。
