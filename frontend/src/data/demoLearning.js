@@ -108,14 +108,14 @@ export const demoErrors = [
   {
     id: "demo-error-1",
     text: "let me think more -> encouraged me to think more critically：正式写作中应避免过于口语化。",
-    source: "演示错题",
+    source: "演示改进记录",
     sourceText: "This course let me think more about language and culture.",
     createdAt: daysAgo(1, 21, 12)
   },
   {
     id: "demo-error-2",
     text: "整理资料可译为 organize materials，也可根据日语场景表达为 発表資料を整理する。",
-    source: "演示错题",
+    source: "演示改进记录",
     sourceText: "下课后，我在图书馆整理了展示资料。",
     createdAt: daysAgo(2, 18, 50)
   }

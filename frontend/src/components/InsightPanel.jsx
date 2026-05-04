@@ -32,7 +32,7 @@ function InsightPanel({
       </div>
       <div className="stat">
         <strong>{reviewCount}</strong>
-        <span>待复习错误</span>
+        <span>待改进表达</span>
       </div>
       <div className="goal-card">
         <div>

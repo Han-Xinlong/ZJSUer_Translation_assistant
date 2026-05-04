@@ -53,7 +53,7 @@ function HistoryDetail({ item, onSaveError, onSaveExpression, onStartRewrite }) 
         <article className="detail-note">
           <span>审校说明</span>
           <p>{result.review}</p>
-          <button type="button" onClick={() => onSaveError(result.review, "历史审校", contextMeta)}>加入复盘</button>
+          <button type="button" onClick={() => onSaveError(result.review, "历史审校", contextMeta)}>加入改进记录</button>
         </article>
       )}
 
@@ -74,7 +74,7 @@ function HistoryDetail({ item, onSaveError, onSaveExpression, onStartRewrite }) 
                     }
                   }}
                 >
-                  {isPolish ? "加入复盘" : "收藏"}
+                  {isPolish ? "加入改进记录" : "收藏"}
                 </button>
               </li>
             ))}

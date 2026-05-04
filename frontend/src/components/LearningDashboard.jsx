@@ -115,7 +115,7 @@ function LearningDashboard({ errors, expressions, goals, history, onGoalsChange 
         </div>
         <div className="stat">
           <strong>{errors.length}</strong>
-          <span>错题沉淀</span>
+          <span>表达改进</span>
         </div>
       </div>
 

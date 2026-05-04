@@ -424,10 +424,10 @@ function App() {
 
           {activeView === "errors" && (
             <CollectionView
-              emptyText="还没有错题。把审校说明和润色修改加入错题库后，会在这里集中复习。"
+              emptyText="还没有改进记录。把审校说明和润色修改加入表达改进库后，会在这里集中复习。"
               items={errors}
               onRemove={(id) => setErrors((items) => items.filter((item) => item.id !== id))}
-              title="错题复盘"
+              title="表达改进库"
             />
           )}
 

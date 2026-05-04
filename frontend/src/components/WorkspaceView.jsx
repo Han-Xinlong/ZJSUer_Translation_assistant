@@ -21,7 +21,7 @@ const features = [
   {
     icon: BrainCircuit,
     title: "成长可视",
-    text: "沉淀错题库、表达库和学习轨迹。"
+    text: "沉淀表达库、改进记录和学习轨迹。"
   }
 ];
 
@@ -177,8 +177,8 @@ function TranslationResult({ onSaveError, onSaveExpression, onShareToCommunity, 
       {result.review && (
         <div className="review-note">
           <p>{result.review}</p>
-          <button type="button" onClick={() => onSaveError(result.review, "审校复盘", expressionMeta)}>
-            加入复盘
+          <button type="button" onClick={() => onSaveError(result.review, "审校改进", expressionMeta)}>
+            加入改进记录
           </button>
         </div>
       )}
@@ -226,8 +226,8 @@ function PolishResult({ onSaveError, onSaveExpression, onShareToCommunity, polis
           {changes.map((item) => (
             <li key={item}>
               <span>{item}</span>
-              <button type="button" onClick={() => onSaveError(item, "润色复盘", expressionMeta)}>
-                加入复盘
+              <button type="button" onClick={() => onSaveError(item, "润色改进", expressionMeta)}>
+                加入改进记录
               </button>
             </li>
           ))}
