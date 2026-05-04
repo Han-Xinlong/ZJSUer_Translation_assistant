@@ -1,4 +1,4 @@
-import { Loader2, LogIn, UserPlus } from "lucide-react";
+import { Eye, EyeOff, Loader2, LogIn, UserPlus } from "lucide-react";
 import { useState } from "react";
 
 function AuthView({ errorMessage, isBusy, onLogin, onRegister }) {
@@ -6,17 +6,45 @@ function AuthView({ errorMessage, isBusy, onLogin, onRegister }) {
   const [form, setForm] = useState({
     displayName: "",
     email: "",
-    password: ""
+    password: "",
+    passwordConfirm: ""
   });
+  const [visibleFields, setVisibleFields] = useState({
+    password: false,
+    passwordConfirm: false
+  });
+  const [formError, setFormError] = useState("");
 
   const isRegister = mode === "register";
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
+    setFormError("");
+  }
+
+  function switchMode(nextMode) {
+    setMode(nextMode);
+    setFormError("");
+    setVisibleFields({
+      password: false,
+      passwordConfirm: false
+    });
+  }
+
+  function togglePasswordField(field) {
+    setVisibleFields((current) => ({
+      ...current,
+      [field]: !current[field]
+    }));
   }
 
   function handleSubmit(event) {
     event.preventDefault();
+    if (isRegister && form.password !== form.passwordConfirm) {
+      setFormError("两次输入的密码不一致，请重新确认。");
+      return;
+    }
+
     const payload = {
       display_name: form.displayName.trim(),
       email: form.email.trim(),
@@ -42,10 +70,10 @@ function AuthView({ errorMessage, isBusy, onLogin, onRegister }) {
         </div>
 
         <div className="auth-tabs" aria-label="账号操作">
-          <button className={mode === "login" ? "mode active" : "mode"} onClick={() => setMode("login")} type="button">
+          <button className={mode === "login" ? "mode active" : "mode"} onClick={() => switchMode("login")} type="button">
             登录
           </button>
-          <button className={mode === "register" ? "mode active" : "mode"} onClick={() => setMode("register")} type="button">
+          <button className={mode === "register" ? "mode active" : "mode"} onClick={() => switchMode("register")} type="button">
             注册
           </button>
         </div>
@@ -75,18 +103,29 @@ function AuthView({ errorMessage, isBusy, onLogin, onRegister }) {
           </label>
           <label>
             <span>密码</span>
-            <input
+            <PasswordInput
               autoComplete={isRegister ? "new-password" : "current-password"}
-              minLength={6}
-              onChange={(event) => updateField("password", event.target.value)}
-              placeholder="至少 6 位"
-              required
-              type="password"
+              isVisible={visibleFields.password}
+              onChange={(value) => updateField("password", value)}
+              onToggle={() => togglePasswordField("password")}
               value={form.password}
             />
           </label>
 
-          {errorMessage && <p className="error-message">{errorMessage}</p>}
+          {isRegister && (
+            <label>
+              <span>确认密码</span>
+              <PasswordInput
+                autoComplete="new-password"
+                isVisible={visibleFields.passwordConfirm}
+                onChange={(value) => updateField("passwordConfirm", value)}
+                onToggle={() => togglePasswordField("passwordConfirm")}
+                value={form.passwordConfirm}
+              />
+            </label>
+          )}
+
+          {(formError || errorMessage) && <p className="error-message">{formError || errorMessage}</p>}
 
           <button className="primary-action" disabled={isBusy} type="submit">
             {isBusy ? <Loader2 className="spin" size={18} /> : isRegister ? <UserPlus size={18} /> : <LogIn size={18} />}
@@ -95,6 +134,25 @@ function AuthView({ errorMessage, isBusy, onLogin, onRegister }) {
         </form>
       </section>
     </main>
+  );
+}
+
+function PasswordInput({ autoComplete, isVisible, onChange, onToggle, value }) {
+  return (
+    <div className="password-field">
+      <input
+        autoComplete={autoComplete}
+        minLength={6}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="至少 6 位"
+        required
+        type={isVisible ? "text" : "password"}
+        value={value}
+      />
+      <button aria-label={isVisible ? "隐藏密码" : "显示密码"} onClick={onToggle} type="button">
+        {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
   );
 }
 

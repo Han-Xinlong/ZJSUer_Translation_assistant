@@ -77,6 +77,38 @@ button {
   font-size: 13px;
 }
 
+.password-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  border: 1px solid #cfd7df;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.password-field:focus-within {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.password-field input {
+  border: 0;
+  min-width: 0;
+}
+
+.password-field button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid #edf0f3;
+  background: transparent;
+  color: #667085;
+}
+
+.password-field button:hover {
+  color: #0f4c4a;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) 280px;
