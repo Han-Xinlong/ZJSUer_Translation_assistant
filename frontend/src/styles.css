@@ -347,6 +347,15 @@ textarea {
   text-transform: uppercase;
 }
 
+.result-context {
+  border-left: 3px solid #d7dde5;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  padding-left: 10px;
+}
+
 .learning-list {
   display: grid;
   gap: 10px;
@@ -515,6 +524,24 @@ textarea {
 .community-list p {
   line-height: 1.7;
   margin: 6px 0 12px;
+}
+
+.collection-context,
+.community-pair {
+  border-left: 3px solid #d7dde5;
+  margin-top: 10px;
+  padding-left: 10px;
+}
+
+.collection-context small,
+.community-pair span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.collection-context p,
+.community-pair p {
+  margin-bottom: 10px;
 }
 
 .profile-grid {

@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.main import app
+from app.services.ai_provider import parse_json_object
 
 
 client = TestClient(app)
@@ -142,3 +143,12 @@ def test_translate_rejects_empty_text():
     )
 
     assert response.status_code == 422
+
+
+def test_parse_json_object_accepts_fenced_or_prefaced_output():
+    assert parse_json_object('```json\n{"translation": "hello"}\n```') == {
+        "translation": "hello"
+    }
+    assert parse_json_object('Here is the JSON:\n{"translation": "hello"}') == {
+        "translation": "hello"
+    }

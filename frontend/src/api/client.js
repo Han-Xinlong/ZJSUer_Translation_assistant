@@ -49,7 +49,16 @@ export async function polish(payload) {
 async function readError(response, fallback) {
   try {
     const payload = await response.json();
-    return payload.detail || fallback;
+    if (typeof payload.detail === "string") {
+      return payload.detail;
+    }
+    if (Array.isArray(payload.detail)) {
+      const firstMessage = payload.detail
+        .map((item) => item?.msg)
+        .find((message) => typeof message === "string");
+      return firstMessage ? `请检查输入内容：${firstMessage}` : "请补充必填信息后再试。";
+    }
+    return fallback;
   } catch {
     return fallback;
   }

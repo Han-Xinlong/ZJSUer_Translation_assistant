@@ -60,7 +60,7 @@ export function createRecordId(prefix = "record") {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function saveUniqueItem(items, text, source) {
+export function saveUniqueItem(items, text, source, metadata = {}) {
   const normalized = text.trim();
   if (!normalized) {
     return items;
@@ -76,6 +76,7 @@ export function saveUniqueItem(items, text, source) {
       id: createRecordId("item"),
       text: normalized,
       source,
+      ...metadata,
       createdAt: new Date().toISOString()
     },
     ...items

@@ -44,6 +44,7 @@ function WorkspaceView({
   onTranslate,
   onVoiceInput,
   polishResult,
+  polishSource,
   sourceText,
   targetLanguage,
   translationResult
@@ -109,6 +110,7 @@ function WorkspaceView({
                   onSaveExpression={onSaveExpression}
                   onShareToCommunity={onShareToCommunity}
                   result={translationResult}
+                  sourceText={sourceText}
                 />
               )}
 
@@ -117,7 +119,10 @@ function WorkspaceView({
                   onSaveError={onSaveError}
                   onSaveExpression={onSaveExpression}
                   onShareToCommunity={onShareToCommunity}
+                  polishSource={polishSource}
                   result={polishResult}
+                  sourceText={sourceText}
+                  translationText={translationResult?.translation || ""}
                 />
               )}
             </div>
@@ -148,8 +153,12 @@ function WorkspaceView({
   );
 }
 
-function TranslationResult({ onSaveError, onSaveExpression, onShareToCommunity, result }) {
+function TranslationResult({ onSaveError, onSaveExpression, onShareToCommunity, result, sourceText }) {
   const suggestions = result.suggestions || [];
+  const expressionMeta = {
+    sourceText,
+    translationText: result.translation
+  };
 
   return (
     <article className="result-section">
@@ -159,17 +168,17 @@ function TranslationResult({ onSaveError, onSaveExpression, onShareToCommunity, 
         {result.model ? ` / ${result.model}` : ""}
       </p>
       <p>{result.translation}</p>
-      <button className="inline-save" type="button" onClick={() => onSaveExpression(result.translation, "译文")}>
-        收藏表达
+      <button className="inline-save" type="button" onClick={() => onSaveExpression(result.translation, "优秀译文", expressionMeta)}>
+        收藏译文
       </button>
-      <button className="inline-save" type="button" onClick={() => onShareToCommunity(result.translation, "译文分享")}>
+      <button className="inline-save" type="button" onClick={() => onShareToCommunity(result.translation, "译文分享", expressionMeta)}>
         分享社群
       </button>
       {result.review && (
         <div className="review-note">
           <p>{result.review}</p>
-          <button type="button" onClick={() => onSaveError(result.review, "审校说明")}>
-            加入错题
+          <button type="button" onClick={() => onSaveError(result.review, "审校复盘", expressionMeta)}>
+            加入复盘
           </button>
         </div>
       )}
@@ -178,7 +187,7 @@ function TranslationResult({ onSaveError, onSaveExpression, onShareToCommunity, 
           {suggestions.map((item) => (
             <li key={item}>
               <span>{item}</span>
-              <button type="button" onClick={() => onSaveExpression(item, "翻译建议")}>
+              <button type="button" onClick={() => onSaveExpression(item, "推荐表达", expressionMeta)}>
                 收藏
               </button>
             </li>
@@ -189,8 +198,13 @@ function TranslationResult({ onSaveError, onSaveExpression, onShareToCommunity, 
   );
 }
 
-function PolishResult({ onSaveError, onSaveExpression, onShareToCommunity, result }) {
+function PolishResult({ onSaveError, onSaveExpression, onShareToCommunity, polishSource, result, sourceText, translationText }) {
   const changes = result.changes || [];
+  const expressionMeta = {
+    sourceText,
+    translationText: result.polished_text,
+    baseText: translationText || sourceText
+  };
 
   return (
     <article className="result-section">
@@ -199,11 +213,12 @@ function PolishResult({ onSaveError, onSaveExpression, onShareToCommunity, resul
         {result.provider}
         {result.model ? ` / ${result.model}` : ""}
       </p>
+      <p className="result-context">润色对象：{polishSource}</p>
       <p>{result.polished_text}</p>
-      <button className="inline-save" type="button" onClick={() => onSaveExpression(result.polished_text, "润色版本")}>
-        收藏表达
+      <button className="inline-save" type="button" onClick={() => onSaveExpression(result.polished_text, "润色佳句", expressionMeta)}>
+        收藏佳句
       </button>
-      <button className="inline-save" type="button" onClick={() => onShareToCommunity(result.polished_text, "润色分享")}>
+      <button className="inline-save" type="button" onClick={() => onShareToCommunity(result.polished_text, "润色分享", expressionMeta)}>
         分享社群
       </button>
       {changes.length > 0 && (
@@ -211,8 +226,8 @@ function PolishResult({ onSaveError, onSaveExpression, onShareToCommunity, resul
           {changes.map((item) => (
             <li key={item}>
               <span>{item}</span>
-              <button type="button" onClick={() => onSaveError(item, "润色修改")}>
-                加入错题
+              <button type="button" onClick={() => onSaveError(item, "润色复盘", expressionMeta)}>
+                加入复盘
               </button>
             </li>
           ))}

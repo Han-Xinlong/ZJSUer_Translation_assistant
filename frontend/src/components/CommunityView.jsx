@@ -19,7 +19,16 @@ function CommunityView({ items, onRemove }) {
                 <span>{item.source}</span>
                 <small>{formatDate(item.createdAt)}</small>
               </div>
-              <p>{item.text}</p>
+              {item.sourceText && (
+                <article className="community-pair">
+                  <span>原文</span>
+                  <p>{item.sourceText}</p>
+                </article>
+              )}
+              <article className="community-pair">
+                <span>{item.source?.includes("润色") ? "润色版本" : "译文"}</span>
+                <p>{item.translationText || item.text}</p>
+              </article>
               <button type="button" onClick={() => onRemove(item.id)}>移除</button>
             </li>
           ))}

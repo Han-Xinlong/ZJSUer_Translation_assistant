@@ -14,6 +14,12 @@ function CollectionView({ emptyText, items, onRemove, title }) {
           {items.map((item) => (
             <li key={item.id}>
               <span>{item.source}</span>
+              {item.sourceText && (
+                <div className="collection-context">
+                  <small>原文</small>
+                  <p>{item.sourceText}</p>
+                </div>
+              )}
               <p>{item.text}</p>
               <button type="button" onClick={() => onRemove(item.id)}>移除</button>
             </li>

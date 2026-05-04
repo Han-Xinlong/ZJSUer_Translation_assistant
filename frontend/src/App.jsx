@@ -70,6 +70,8 @@ function App() {
   const trimmedText = sourceText.trim();
   const isBusy = activeAction !== null;
   const canSubmit = trimmedText.length > 0 && !isBusy;
+  const latestTranslationText =
+    translationResult?.sourceText === trimmedText ? translationResult.translation?.trim() || "" : "";
 
   const expressionCount = useMemo(() => {
     return history.length + expressions.length;
@@ -169,17 +171,21 @@ function App() {
         target_language: targetLanguage,
         mode
       });
+      const resultWithContext = {
+        ...result,
+        sourceText: trimmedText
+      };
       const historyItem = {
         id: createRecordId("history"),
         type: mode === "deep" ? "深度翻译" : "快速翻译",
-        text: result.translation,
+        text: resultWithContext.translation,
         sourceText: trimmedText,
         targetLanguage,
         mode,
-        result,
+        result: resultWithContext,
         createdAt: new Date().toISOString()
       };
-      setTranslationResult(result);
+      setTranslationResult(resultWithContext);
       setSelectedHistoryId(historyItem.id);
       setHistory((items) => [historyItem, ...items]);
     } catch (error) {
@@ -194,12 +200,15 @@ function App() {
       return;
     }
 
+    const polishInput = latestTranslationText || trimmedText;
+    const polishSource = latestTranslationText ? "当前译文" : "原文输入";
+
     setActiveAction("polish");
     setErrorMessage("");
 
     try {
       const result = await polish({
-        text: trimmedText,
+        text: polishInput,
         context: contextText.trim() || null,
         target_language: targetLanguage
       });
@@ -207,7 +216,9 @@ function App() {
         id: createRecordId("history"),
         type: "润色",
         text: result.polished_text,
-        sourceText: trimmedText,
+        sourceText: polishInput,
+        originalSourceText: trimmedText,
+        polishSource,
         targetLanguage,
         result,
         createdAt: new Date().toISOString()
@@ -243,7 +254,11 @@ function App() {
     setCommunityPosts(demoCommunityPosts);
     setGoals(demoGoals);
     setSelectedHistoryId(demoHistory[0]?.id || null);
-    setTranslationResult(demoHistory[0]?.result || null);
+    setTranslationResult(
+      demoHistory[0]?.result
+        ? { ...demoHistory[0].result, sourceText: demoHistory[0].sourceText }
+        : null
+    );
     setPolishResult(demoHistory[1]?.result || null);
     setSourceText(demoHistory[0]?.sourceText || sourceText);
     setTargetLanguage(demoHistory[0]?.targetLanguage || targetLanguage);
@@ -286,12 +301,12 @@ function App() {
     URL.revokeObjectURL(url);
   }
 
-  function handleSaveExpression(text, source = "AI 建议") {
-    setExpressions((items) => saveUniqueItem(items, text, source));
+  function handleSaveExpression(text, source = "AI 建议", metadata = {}) {
+    setExpressions((items) => saveUniqueItem(items, text, source, metadata));
   }
 
-  function handleSaveError(text, source = "AI 修改") {
-    setErrors((items) => saveUniqueItem(items, text, source));
+  function handleSaveError(text, source = "AI 修改", metadata = {}) {
+    setErrors((items) => saveUniqueItem(items, text, source, metadata));
   }
 
   function handleVoiceInput() {
@@ -322,7 +337,7 @@ function App() {
     recognition.start();
   }
 
-  function handleShareToCommunity(text, source) {
+  function handleShareToCommunity(text, source, metadata = {}) {
     const normalized = text?.trim();
     if (!normalized) {
       return;
@@ -332,6 +347,9 @@ function App() {
         id: createRecordId("community"),
         text: normalized,
         source,
+        sourceText: metadata.sourceText || trimmedText,
+        translationText: metadata.translationText || normalized,
+        note: metadata.note || "",
         createdAt: new Date().toISOString()
       },
       ...items
@@ -388,6 +406,7 @@ function App() {
               onTranslate={handleTranslate}
               onVoiceInput={handleVoiceInput}
               polishResult={polishResult}
+              polishSource={latestTranslationText ? "当前译文" : "原文输入"}
               sourceText={sourceText}
               targetLanguage={targetLanguage}
               translationResult={translationResult}
@@ -408,7 +427,7 @@ function App() {
               emptyText="还没有错题。把审校说明和润色修改加入错题库后，会在这里集中复习。"
               items={errors}
               onRemove={(id) => setErrors((items) => items.filter((item) => item.id !== id))}
-              title="错题库"
+              title="错题复盘"
             />
           )}
 

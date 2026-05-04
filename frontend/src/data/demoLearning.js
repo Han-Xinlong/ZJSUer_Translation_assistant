@@ -85,18 +85,21 @@ export const demoExpressions = [
     id: "demo-expression-1",
     text: "find my rhythm in campus life",
     source: "演示表达",
+    sourceText: "我逐渐适应了校园生活的节奏，也学会了在课程学习和社团活动之间保持平衡。",
     createdAt: daysAgo(0, 19, 30)
   },
   {
     id: "demo-expression-2",
     text: "balance coursework with club activities",
     source: "演示表达",
+    sourceText: "我逐渐适应了校园生活的节奏，也学会了在课程学习和社团活动之间保持平衡。",
     createdAt: daysAgo(1, 21, 8)
   },
   {
     id: "demo-expression-3",
     text: "think critically about the relationship between language and culture",
     source: "演示表达",
+    sourceText: "This course let me think more about language and culture.",
     createdAt: daysAgo(2, 18, 45)
   }
 ];
@@ -106,12 +109,14 @@ export const demoErrors = [
     id: "demo-error-1",
     text: "let me think more -> encouraged me to think more critically：正式写作中应避免过于口语化。",
     source: "演示错题",
+    sourceText: "This course let me think more about language and culture.",
     createdAt: daysAgo(1, 21, 12)
   },
   {
     id: "demo-error-2",
     text: "整理资料可译为 organize materials，也可根据日语场景表达为 発表資料を整理する。",
     source: "演示错题",
+    sourceText: "下课后，我在图书馆整理了展示资料。",
     createdAt: daysAgo(2, 18, 50)
   }
 ];
@@ -120,12 +125,16 @@ export const demoCommunityPosts = [
   {
     id: "demo-community-1",
     text: "I have gradually found my rhythm in campus life and learned to balance coursework with club activities.",
+    sourceText: "我逐渐适应了校园生活的节奏，也学会了在课程学习和社团活动之间保持平衡。",
+    translationText: "I have gradually found my rhythm in campus life and learned to balance coursework with club activities.",
     source: "演示社群分享",
     createdAt: daysAgo(0, 20, 5)
   },
   {
     id: "demo-community-2",
     text: "授業後、図書館で発表資料を整理しました。",
+    sourceText: "下课后，我在图书馆整理了展示资料。",
+    translationText: "授業後、図書館で発表資料を整理しました。",
     source: "演示社群分享",
     createdAt: daysAgo(2, 19, 5)
   }

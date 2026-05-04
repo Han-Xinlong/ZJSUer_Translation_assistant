@@ -90,19 +90,7 @@ class OpenAIProvider:
         raise AIProviderError("OpenAI API response did not include text output.")
 
     def _parse_json(self, text: str) -> Dict[str, Any]:
-        cleaned = text.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.strip("`")
-            cleaned = cleaned.removeprefix("json").strip()
-
-        try:
-            value = json.loads(cleaned)
-        except json.JSONDecodeError as exc:
-            raise AIProviderError(f"Model returned non-JSON output: {text[:600]}") from exc
-
-        if not isinstance(value, dict):
-            raise AIProviderError("Model JSON output must be an object.")
-        return value
+        return parse_json_object(text)
 
 
 class ChatCompletionsProvider:
@@ -181,19 +169,39 @@ class ChatCompletionsProvider:
         return str(content)
 
     def _parse_json(self, text: str) -> Dict[str, Any]:
-        cleaned = text.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.strip("`")
-            cleaned = cleaned.removeprefix("json").strip()
+        return parse_json_object(text)
 
+
+def parse_json_object(text: str) -> Dict[str, Any]:
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        if lines and lines[0].strip().startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+
+    candidates = [cleaned]
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and start < end:
+        candidates.append(cleaned[start : end + 1])
+
+    for candidate in candidates:
         try:
-            value = json.loads(cleaned)
-        except json.JSONDecodeError as exc:
-            raise AIProviderError(f"Model returned non-JSON output: {text[:600]}") from exc
+            value = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            return value
+        raise AIProviderError("Model JSON output must be an object.")
 
-        if not isinstance(value, dict):
-            raise AIProviderError("Model JSON output must be an object.")
-        return value
+    preview = text[:600]
+    raise AIProviderError(
+        "AI 返回内容暂时无法解析。请补充语境说明，或稍后重试；"
+        f"原始片段：{preview}"
+    )
 
 
 def create_ai_provider():

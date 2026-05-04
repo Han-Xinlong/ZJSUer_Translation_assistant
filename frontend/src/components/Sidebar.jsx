@@ -3,7 +3,7 @@ import { BookOpen } from "lucide-react";
 const navigationItems = [
   { id: "workspace", label: "写作台" },
   { id: "expressions", label: "表达库" },
-  { id: "errors", label: "错题库" },
+  { id: "errors", label: "错题复盘" },
   { id: "history", label: "历史详情" },
   { id: "profile", label: "学习档案" },
   { id: "community", label: "社群互学" }

@@ -19,6 +19,11 @@ function HistoryDetail({ item, onSaveError, onSaveExpression, onStartRewrite }) 
   const isPolish = item.type === "润色";
   const outputText = isPolish ? result.polished_text || item.text : result.translation || item.text;
   const suggestions = isPolish ? result.changes || [] : result.suggestions || [];
+  const contextMeta = {
+    sourceText: item.originalSourceText || item.sourceText,
+    translationText: outputText,
+    baseText: item.sourceText
+  };
 
   return (
     <section className="history-detail">
@@ -38,7 +43,7 @@ function HistoryDetail({ item, onSaveError, onSaveExpression, onStartRewrite }) 
         <article>
           <span>{isPolish ? "终稿" : "译文"}</span>
           <p>{outputText}</p>
-          <button type="button" onClick={() => onSaveExpression(outputText, isPolish ? "历史润色" : "历史译文")}>
+          <button type="button" onClick={() => onSaveExpression(outputText, isPolish ? "历史润色" : "历史译文", contextMeta)}>
             收藏表达
           </button>
         </article>
@@ -48,7 +53,7 @@ function HistoryDetail({ item, onSaveError, onSaveExpression, onStartRewrite }) 
         <article className="detail-note">
           <span>审校说明</span>
           <p>{result.review}</p>
-          <button type="button" onClick={() => onSaveError(result.review, "历史审校")}>加入错题</button>
+          <button type="button" onClick={() => onSaveError(result.review, "历史审校", contextMeta)}>加入复盘</button>
         </article>
       )}
 
@@ -63,13 +68,13 @@ function HistoryDetail({ item, onSaveError, onSaveExpression, onStartRewrite }) 
                   type="button"
                   onClick={() => {
                     if (isPolish) {
-                      onSaveError(suggestion, "历史修改");
+                      onSaveError(suggestion, "历史修改", contextMeta);
                     } else {
-                      onSaveExpression(suggestion, "历史建议");
+                      onSaveExpression(suggestion, "历史建议", contextMeta);
                     }
                   }}
                 >
-                  {isPolish ? "加入错题" : "收藏"}
+                  {isPolish ? "加入复盘" : "收藏"}
                 </button>
               </li>
             ))}

@@ -91,13 +91,16 @@ describe("storage utilities", () => {
   });
 
   it("saves unique non-empty learning items", () => {
-    const first = saveUniqueItem([], "  useful expression  ", "测试来源");
+    const first = saveUniqueItem([], "  useful expression  ", "测试来源", {
+      sourceText: "原文"
+    });
 
     expect(first).toEqual([
       {
         id: "test-uuid",
         text: "useful expression",
         source: "测试来源",
+        sourceText: "原文",
         createdAt: "2026-04-30T08:00:00.000Z"
       }
     ]);
