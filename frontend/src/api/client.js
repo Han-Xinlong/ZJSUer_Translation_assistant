@@ -14,6 +14,68 @@ export async function getStatus() {
   return response.json();
 }
 
+export async function register(payload) {
+  return authRequest("/api/auth/register", payload);
+}
+
+export async function login(payload) {
+  return authRequest("/api/auth/login", payload);
+}
+
+export async function getCurrentUser(token) {
+  const response = await fetch(buildApiUrl("/api/auth/me"), {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Failed to fetch current user"));
+  }
+
+  return response.json();
+}
+
+export async function logout(token) {
+  const response = await fetch(buildApiUrl("/api/auth/logout"), {
+    method: "POST",
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Failed to logout"));
+  }
+
+  return response.json();
+}
+
+export async function getLearningState(token) {
+  const response = await fetch(buildApiUrl("/api/learning-state"), {
+    headers: authHeaders(token)
+  });
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Failed to fetch learning state"));
+  }
+
+  return response.json();
+}
+
+export async function saveLearningState(token, payload) {
+  const response = await fetch(buildApiUrl("/api/learning-state"), {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token)
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Failed to save learning state"));
+  }
+
+  return response.json();
+}
+
 export async function translate(payload) {
   const response = await fetch(buildApiUrl("/api/translate"), {
     method: "POST",
@@ -62,4 +124,24 @@ async function readError(response, fallback) {
   } catch {
     return fallback;
   }
+}
+
+async function authRequest(path, payload) {
+  const response = await fetch(buildApiUrl(path), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Authentication request failed"));
+  }
+
+  return response.json();
+}
+
+function authHeaders(token) {
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }

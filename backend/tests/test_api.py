@@ -152,3 +152,54 @@ def test_parse_json_object_accepts_fenced_or_prefaced_output():
     assert parse_json_object('Here is the JSON:\n{"translation": "hello"}') == {
         "translation": "hello"
     }
+
+
+def test_register_login_and_learning_state_roundtrip():
+    email = "student-auth-test@example.com"
+    password = "secret123"
+
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": email,
+            "password": password,
+            "display_name": "测试同学",
+        },
+    )
+
+    if response.status_code == 409:
+        response = client.post(
+            "/api/auth/login",
+            json={
+                "email": email,
+                "password": password,
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    token = payload["token"]
+    assert payload["user"]["email"] == email
+    assert payload["user"]["display_name"] == "测试同学"
+
+    state = {
+        "history": [{"id": "history-1", "text": "hello"}],
+        "expressions": [{"id": "expression-1", "text": "find my rhythm"}],
+        "improvements": [{"id": "improvement-1", "text": "avoid literal translation"}],
+        "community_posts": [{"id": "community-1", "text": "shared"}],
+        "goals": {"dailyTarget": 5},
+    }
+    save_response = client.put(
+        "/api/learning-state",
+        headers={"Authorization": f"Bearer {token}"},
+        json=state,
+    )
+
+    assert save_response.status_code == 200
+    get_response = client.get(
+        "/api/learning-state",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert get_response.status_code == 200
+    assert get_response.json() == state

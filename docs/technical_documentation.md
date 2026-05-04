@@ -12,13 +12,14 @@
 
 ## 2. 总体架构
 
-项目采用“前端轻量、后端服务化、数据本地化”的架构。
+项目采用“前端轻量、后端服务化、数据本地化 + 账号同步”的架构。
 
 ```mermaid
 flowchart LR
   U[外语学习者] --> FE[React + Vite 前端]
   FE --> LS[浏览器 localStorage]
   FE --> API[FastAPI 后端 API]
+  API --> DB[(SQLite 用户与学习数据)]
   API --> ORCH[AIOrchestrator 工作流编排]
   ORCH --> PROMPTS[Prompt 模板]
   ORCH --> PROVIDER[AI Provider]
@@ -35,8 +36,8 @@ flowchart LR
 | 原则 | 当前实现 | 后续方向 |
 |---|---|---|
 | 前端轻量 | React 单页应用，页面直接进入写作台 | 拆分更多组件，支持路由 |
-| 后端服务化 | FastAPI 提供翻译/润色接口 | 增加用户、同步、日志接口 |
-| 数据本地化 | localStorage 保存历史、表达、改进记录、社群、目标 | 升级 IndexedDB |
+| 后端服务化 | FastAPI 提供翻译/润色/认证/学习数据接口 | 增加日志和统计接口 |
+| 数据本地化 | localStorage 缓存 + SQLite 个人数据快照 | 后续升级为关系化学习记录 |
 | AI 可替换 | Provider 抽象支持 mock/openai/deepseek/dashscope/compatible | 扩展通义、文心等 |
 | 过程可复盘 | 历史详情保存初稿、结果、建议 | 增加版本 diff 高亮 |
 | 成长可视 | 7天趋势图、14天热力格 | 增加月度报告和导出 |
@@ -50,10 +51,12 @@ ZJSUer_Translation_assistant/
 │   │   ├── api/routes.py
 │   │   ├── core/config.py
 │   │   ├── schemas/ai.py
+│   │   ├── schemas/auth.py
 │   │   └── services/
 │   │       ├── ai_orchestrator.py
 │   │       ├── ai_provider.py
-│   │       └── prompt_loader.py
+│   │       ├── prompt_loader.py
+│   │       └── user_store.py
 │   ├── .env.example
 │   └── requirements.txt
 ├── frontend/
@@ -166,6 +169,8 @@ CSS 核心布局：
 | `communityPosts` | array | 社群共享内容 |
 | `goals` | object | 每日目标 |
 | `activeView` | string | 当前中间视图 |
+| `authToken` | string | 登录会话 token |
+| `currentUser` | object/null | 当前登录用户 |
 | `selectedHistoryId` | string/null | 当前历史详情 |
 | `activeAction` | translate/polish/null | loading 状态 |
 | `serviceStatus` | object | AI 服务在线状态、Provider、模型和配置情况 |
@@ -497,6 +502,7 @@ Promise.all([
 
 | Key | 内容 |
 |---|---|
+| `zjsuer.translation.auth_token` | 登录 token |
 | `zjsuer.translation.history` | 完整历史记录 |
 | `zjsuer.translation.expressions` | 表达库 |
 | `zjsuer.translation.errors` | 表达改进库 |
@@ -510,6 +516,39 @@ Promise.all([
 - `loadObject`
 - `saveObject`
 - `saveUniqueItem`
+
+### 5.1 账号与个人学习数据
+
+后端使用 SQLite 保存轻量账号体系和每个用户的学习数据快照。
+
+核心文件：
+
+| 文件 | 职责 |
+|---|---|
+| `backend/app/schemas/auth.py` | 登录、注册、用户公开信息、学习数据结构 |
+| `backend/app/services/user_store.py` | SQLite 建表、密码哈希、session token、学习数据读写 |
+| `backend/app/api/routes.py` | `/auth/*` 与 `/learning-state` API |
+
+SQLite 表：
+
+| 表 | 说明 |
+|---|---|
+| `users` | 用户邮箱、昵称、密码哈希 |
+| `sessions` | 登录 token、用户 ID、过期时间 |
+| `learning_states` | 每个用户一份 JSON 学习数据快照 |
+
+接口：
+
+| 接口 | 说明 |
+|---|---|
+| `POST /api/auth/register` | 注册并返回 token |
+| `POST /api/auth/login` | 登录并返回 token |
+| `GET /api/auth/me` | 校验 token 并返回当前用户 |
+| `POST /api/auth/logout` | 删除当前 session |
+| `GET /api/learning-state` | 读取当前用户学习数据 |
+| `PUT /api/learning-state` | 保存当前用户学习数据 |
+
+密码不会明文保存。当前使用 PBKDF2-HMAC-SHA256 加盐哈希，适合大创阶段的轻量演示和小规模测试。
 
 ## 6. 后端技术实现
 

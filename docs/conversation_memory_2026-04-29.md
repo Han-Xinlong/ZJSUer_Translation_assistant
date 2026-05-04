@@ -1838,3 +1838,69 @@ http://62.234.13.61/
 
 - 代码内部仍保留 `errors` / `ERRORS_KEY` 等变量名和 localStorage key，以兼容历史本地数据；这是内部实现名，不再作为用户可见文案。
 - 后续如果做数据库迁移或大版本重构，可再把内部状态命名从 `errors` 迁移为 `improvements`。
+
+## 26. 2026-05-05 评委建议：账号体系与移动端适配
+
+### 26.1 评委反馈
+
+用户转述评委意见：
+
+- 当前功能丰富，各大功能基本能正常运作。
+- 目前没有用户登录/注册页面，点开就能用。
+- 电脑版主页内容丰富，但手机版会把桌面一页内容拉长，布局开始变形。
+- 建议考虑电脑版和手机版不同布局；或者回到“轻量随写随译”的初衷，电脑版也向手机端看齐，单页内容减少，通过标签栏切换页面。
+
+### 26.2 本次实现决策
+
+作为大创阶段的全栈实现，采用“轻量账号 + SQLite 个人数据快照 + 响应式单栏移动端”的方案：
+
+- 不引入第三方 OAuth 或复杂权限系统，避免部署和评审演示复杂化。
+- 后端使用 SQLite，新增 `users`、`sessions`、`learning_states` 三张表。
+- 密码使用 PBKDF2-HMAC-SHA256 加盐哈希保存，不保存明文密码。
+- 每个用户保存一份学习数据 JSON 快照，包含历史记录、表达库、表达改进库、社群分享和每日目标。
+- Docker 腾讯云部署为后端挂载 `zjsuer-data` volume，避免重建容器后 SQLite 数据丢失。
+- 前端首次进入显示登录/注册页，登录后才进入学习工作台。
+- 手机端改为底部标签栏 + 单栏写作布局，隐藏桌面右侧洞察栏和功能卡，避免三栏信息在手机上被强行拉长。
+
+### 26.3 涉及代码
+
+后端：
+
+- `backend/app/schemas/auth.py`：新增登录、注册、用户公开信息、学习数据结构。
+- `backend/app/services/user_store.py`：新增 SQLite 建表、密码哈希、token session、学习数据读写。
+- `backend/app/api/routes.py`：新增 `/api/auth/register`、`/api/auth/login`、`/api/auth/me`、`/api/auth/logout`、`/api/learning-state`。
+- `backend/app/core/config.py`：新增 `DATABASE_PATH` 和 `AUTH_TOKEN_DAYS` 配置。
+- `backend/.env.example`、`deploy/tencent.env.example`：同步新增数据库和 token 配置。
+- `docker-compose.tencent.yml`：新增 `zjsuer-data` volume。
+
+前端：
+
+- `frontend/src/components/AuthView.jsx`：新增登录/注册页面。
+- `frontend/src/api/client.js`：新增 auth 和 learning-state API。
+- `frontend/src/App.jsx`：新增 token、当前用户、远端学习数据加载和自动同步逻辑。
+- `frontend/src/components/Sidebar.jsx`：显示当前用户昵称和退出按钮。
+- `frontend/src/styles.css`：新增登录页样式和手机端底部标签栏/单栏布局。
+- `frontend/src/utils/storage.js`：新增 auth token 本地缓存工具。
+
+文档：
+
+- `README.md`：补充账号、SQLite、移动端布局和 API。
+- `docs/user_manual.md`：补充登录/注册、手机端布局和数据保存说明。
+- `docs/technical_documentation.md`：补充账号同步架构、SQLite 表和接口。
+- `docs/domestic_deployment.md`：补充腾讯云 SQLite volume 持久化说明。
+- `docs/classmate_quick_start.md`：补充账号和手机端体验说明。
+
+### 26.4 验证记录
+
+已验证：
+
+- 后端：`PYTHONPATH=. .venv/bin/pytest`，10 个测试通过。
+- 前端：`npm test`，15 个测试通过。
+- 前端：`npm run build`，构建通过。
+- 本地后端启动在 `http://127.0.0.1:8001` 后，通过 `curl` 完成注册、保存学习数据、读取学习数据 roundtrip。
+- 本地前端 Vite 页面可通过 HTTP 200 访问。
+
+限制：
+
+- 当前手机端未用自动化浏览器截图验证，因为本机 `agent-browser` CLI 不可用；已通过 CSS 响应式规则和构建验证兜底。
+- 当前学习数据为“每用户一份 JSON 快照”，适合小规模测试和大创演示；后续正式化可拆成 records/expressions/improvements 等关系表，支持分页、搜索、统计和教师端分析。

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from app.schemas.ai import (
     HealthResponse,
@@ -8,13 +8,32 @@ from app.schemas.ai import (
     TranslateRequest,
     TranslateResponse,
 )
+from app.schemas.auth import AuthRequest, AuthResponse, LearningState, LoginRequest, UserPublic
 from app.core.config import settings
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_provider import AIProviderConfigurationError, AIProviderError
+from app.services.user_store import DuplicateUserError, InvalidCredentialsError, user_store
 
 
 router = APIRouter()
 orchestrator = AIOrchestrator()
+
+
+def current_user(authorization: str = Header(default="")) -> UserPublic:
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="请先登录后再使用个人学习数据。",
+        )
+
+    user = user_store.get_user_by_token(token)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="登录状态已过期，请重新登录。",
+        )
+    return user
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -75,6 +94,51 @@ def service_status() -> StatusResponse:
         configured=configured,
         message=message,
     )
+
+
+@router.post("/auth/register", response_model=AuthResponse)
+def register(payload: AuthRequest) -> AuthResponse:
+    try:
+        token, user = user_store.create_user(
+            email=str(payload.email),
+            password=payload.password,
+            display_name=payload.display_name,
+        )
+    except DuplicateUserError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return AuthResponse(token=token, user=user)
+
+
+@router.post("/auth/login", response_model=AuthResponse)
+def login(payload: LoginRequest) -> AuthResponse:
+    try:
+        token, user = user_store.authenticate(str(payload.email), payload.password)
+    except InvalidCredentialsError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    return AuthResponse(token=token, user=user)
+
+
+@router.get("/auth/me", response_model=UserPublic)
+def me(user: UserPublic = Depends(current_user)) -> UserPublic:
+    return user
+
+
+@router.post("/auth/logout")
+def logout(authorization: str = Header(default="")) -> dict:
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() == "bearer" and token:
+        user_store.delete_session(token)
+    return {"status": "ok"}
+
+
+@router.get("/learning-state", response_model=LearningState)
+def get_learning_state(user: UserPublic = Depends(current_user)) -> LearningState:
+    return user_store.get_learning_state(user.id)
+
+
+@router.put("/learning-state", response_model=LearningState)
+def save_learning_state(payload: LearningState, user: UserPublic = Depends(current_user)) -> LearningState:
+    return user_store.save_learning_state(user.id, payload)
 
 
 @router.post("/translate", response_model=TranslateResponse)

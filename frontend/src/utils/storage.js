@@ -3,6 +3,7 @@ export const EXPRESSIONS_KEY = "zjsuer.translation.expressions";
 export const ERRORS_KEY = "zjsuer.translation.errors";
 export const GOALS_KEY = "zjsuer.translation.goals";
 export const COMMUNITY_KEY = "zjsuer.translation.community";
+export const AUTH_TOKEN_KEY = "zjsuer.translation.auth_token";
 
 export const APP_STORAGE_KEYS = [
   HISTORY_KEY,
@@ -44,6 +45,18 @@ export function loadObject(key, fallback = {}) {
 
 export function saveObject(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+export function loadText(key, fallback = "") {
+  try {
+    return window.localStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function saveText(key, value) {
+  window.localStorage.setItem(key, value);
 }
 
 export function clearAppStorage() {

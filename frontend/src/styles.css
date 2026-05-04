@@ -27,6 +27,56 @@ button {
   padding: 24px;
 }
 
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.auth-panel {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 440px);
+  border: 1px solid #d7dde5;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 24px;
+}
+
+.auth-panel h1 {
+  font-size: 26px;
+}
+
+.auth-copy {
+  color: #667085;
+  line-height: 1.7;
+  margin-bottom: 0;
+}
+
+.auth-tabs {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #cfd7df;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.auth-form label span {
+  color: #667085;
+  font-size: 13px;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) 280px;
@@ -88,6 +138,19 @@ button {
 .nav-item:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid #cfd7df;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475467;
+  margin-top: 18px;
+  padding: 9px 12px;
 }
 
 .editor-panel {
@@ -927,7 +990,7 @@ textarea {
 
 @media (max-width: 760px) {
   .app-shell {
-    padding: 14px;
+    padding: 12px 12px 86px;
   }
 
   .workspace,
@@ -948,9 +1011,36 @@ textarea {
   }
 
   .sidebar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    border-top: 1px solid #d7dde5;
     border-right: 0;
-    border-bottom: 1px solid #d7dde5;
-    padding: 0 0 12px;
+    background: #ffffff;
+    padding: 8px;
+  }
+
+  .brand,
+  .logout-button,
+  .feature-grid,
+  .insight-panel {
+    display: none;
+  }
+
+  .nav-list {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .nav-item {
+    min-height: 44px;
+    overflow: hidden;
+    padding: 7px 4px;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .panel-header {
@@ -959,8 +1049,8 @@ textarea {
   }
 
   .toolbar {
-    align-items: stretch;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .primary-action,
@@ -969,7 +1059,42 @@ textarea {
     width: 100%;
   }
 
+  .toolbar label {
+    grid-column: 1 / -1;
+  }
+
+  .writing-box,
+  .result-box,
+  .collection-panel,
+  .profile-panel,
+  .history-detail {
+    min-height: auto;
+    padding: 14px;
+  }
+
+  textarea {
+    min-height: 190px;
+  }
+
+  .writing-grid.immersive .writing-box,
+  .writing-grid.immersive textarea {
+    min-height: 62vh;
+  }
+
+  .corpus-grid {
+    gap: 10px;
+  }
+
   h1 {
     font-size: 24px;
+  }
+
+  .auth-shell {
+    align-items: start;
+    padding: 16px;
+  }
+
+  .auth-panel {
+    padding: 18px;
   }
 }

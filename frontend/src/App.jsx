@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { getStatus, polish, translate } from "./api/client.js";
+import { getCurrentUser, getLearningState, getStatus, login, logout, polish, register, saveLearningState, translate } from "./api/client.js";
+import AuthView from "./components/AuthView.jsx";
 import CollectionView from "./components/CollectionView.jsx";
 import CommunityView from "./components/CommunityView.jsx";
 import HistoryDetail from "./components/HistoryDetail.jsx";
@@ -25,12 +26,15 @@ import {
   EXPRESSIONS_KEY,
   GOALS_KEY,
   HISTORY_KEY,
+  AUTH_TOKEN_KEY,
   clearAppStorage,
   createRecordId,
   loadCollection,
   loadObject,
+  loadText,
   saveCollection,
   saveObject,
+  saveText,
   saveUniqueItem
 } from "./utils/storage.js";
 
@@ -39,6 +43,12 @@ const DEFAULT_GOALS = {
 };
 
 function App() {
+  const [authToken, setAuthToken] = useState(() => loadText(AUTH_TOKEN_KEY));
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authStatus, setAuthStatus] = useState(authToken ? "checking" : "guest");
+  const [authError, setAuthError] = useState("");
+  const [authAction, setAuthAction] = useState(null);
+  const [isRemoteLoaded, setIsRemoteLoaded] = useState(false);
   const [sourceText, setSourceText] = useState("今天我想练习一段关于校园学习生活的英文表达。");
   const [mode, setMode] = useState("quick");
   const [targetLanguage, setTargetLanguage] = useState("English");
@@ -72,6 +82,7 @@ function App() {
   const canSubmit = trimmedText.length > 0 && !isBusy;
   const latestTranslationText =
     translationResult?.sourceText === trimmedText ? translationResult.translation?.trim() || "" : "";
+  const isAuthenticated = Boolean(authToken && currentUser);
 
   const expressionCount = useMemo(() => {
     return history.length + expressions.length;
@@ -129,6 +140,62 @@ function App() {
   useEffect(() => {
     saveObject(GOALS_KEY, goals);
   }, [goals]);
+
+  useEffect(() => {
+    if (!authToken) {
+      setAuthStatus("guest");
+      setCurrentUser(null);
+      setIsRemoteLoaded(false);
+      return;
+    }
+
+    let isMounted = true;
+    setAuthStatus("checking");
+    setAuthError("");
+
+    Promise.all([getCurrentUser(authToken), getLearningState(authToken)])
+      .then(([user, remoteState]) => {
+        if (!isMounted) {
+          return;
+        }
+        setCurrentUser(user);
+        applyLearningState(remoteState);
+        setAuthStatus("ready");
+        setIsRemoteLoaded(true);
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return;
+        }
+        window.localStorage.removeItem(AUTH_TOKEN_KEY);
+        setAuthToken("");
+        setCurrentUser(null);
+        setAuthStatus("guest");
+        setIsRemoteLoaded(false);
+        setAuthError(error.message || "登录状态失效，请重新登录。");
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authToken]);
+
+  useEffect(() => {
+    if (!authToken || !currentUser || !isRemoteLoaded) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      saveLearningState(authToken, buildLearningState())
+        .catch((error) => {
+          setErrorMessage(error.message || "学习数据同步失败，请稍后重试。");
+        });
+    }, 600);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [authToken, currentUser, isRemoteLoaded, history, expressions, errors, communityPosts, goals]);
 
   useEffect(() => {
     let isMounted = true;
@@ -281,6 +348,49 @@ function App() {
     setErrorMessage("");
   }
 
+  async function handleRegister(payload) {
+    setAuthAction("register");
+    setAuthError("");
+    try {
+      const result = await register(payload);
+      saveText(AUTH_TOKEN_KEY, result.token);
+      setAuthToken(result.token);
+      setCurrentUser(result.user);
+    } catch (error) {
+      setAuthError(error.message || "注册失败，请稍后重试。");
+    } finally {
+      setAuthAction(null);
+    }
+  }
+
+  async function handleLogin(payload) {
+    setAuthAction("login");
+    setAuthError("");
+    try {
+      const result = await login(payload);
+      saveText(AUTH_TOKEN_KEY, result.token);
+      setAuthToken(result.token);
+      setCurrentUser(result.user);
+    } catch (error) {
+      setAuthError(error.message || "登录失败，请检查邮箱和密码。");
+    } finally {
+      setAuthAction(null);
+    }
+  }
+
+  async function handleLogout() {
+    const token = authToken;
+    window.localStorage.removeItem(AUTH_TOKEN_KEY);
+    setAuthToken("");
+    setCurrentUser(null);
+    setAuthStatus("guest");
+    setIsRemoteLoaded(false);
+    setAuthError("");
+    if (token) {
+      logout(token).catch(() => {});
+    }
+  }
+
   function handleExportReport() {
     const report = buildLearningReport({
       communityPosts,
@@ -357,10 +467,52 @@ function App() {
     setActiveView("community");
   }
 
+  function buildLearningState() {
+    return {
+      history,
+      expressions,
+      improvements: errors,
+      community_posts: communityPosts,
+      goals
+    };
+  }
+
+  function applyLearningState(state) {
+    const nextHistory = state.history || [];
+    setHistory(nextHistory);
+    setExpressions(state.expressions || []);
+    setErrors(state.improvements || []);
+    setCommunityPosts(state.community_posts || []);
+    setGoals({
+      ...DEFAULT_GOALS,
+      ...(state.goals || {})
+    });
+    setSelectedHistoryId(nextHistory[0]?.id || null);
+    setTranslationResult(nextHistory[0]?.result || null);
+    setPolishResult(nextHistory.find((item) => item.type === "润色")?.result || null);
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AuthView
+        errorMessage={authError}
+        isBusy={authAction !== null || authStatus === "checking"}
+        onLogin={handleLogin}
+        onRegister={handleRegister}
+      />
+    );
+  }
+
   return (
     <main className="app-shell">
       <section className="workspace">
-        <Sidebar activeView={activeView} hasHistory={history.length > 0} onViewChange={setActiveView} />
+        <Sidebar
+          activeView={activeView}
+          currentUser={currentUser}
+          hasHistory={history.length > 0}
+          onLogout={handleLogout}
+          onViewChange={setActiveView}
+        />
 
         <section className="editor-panel" aria-label="随写随翻工作区">
           <header className="panel-header">

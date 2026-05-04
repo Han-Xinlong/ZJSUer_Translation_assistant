@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     app_name: str = "ZJSUer Translation Assistant API"
     app_env: str = "development"
     allowed_origins: List[str] = ["http://localhost:5173"]
+    database_path: str = "data/zjsuer_translation.sqlite3"
+    auth_token_days: int = 14
     ai_provider: str = "mock"
 
     openai_api_key: Optional[str] = None

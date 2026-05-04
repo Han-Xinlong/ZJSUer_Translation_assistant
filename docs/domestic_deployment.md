@@ -182,6 +182,15 @@ AI_PROVIDER=mock
 
 这样无需真实模型 Key，评审和同学也能完整体验产品流程。
 
+账号系统会把用户和学习数据保存到后端 SQLite。默认腾讯云部署配置为：
+
+```env
+DATABASE_PATH=/app/data/zjsuer_translation.sqlite3
+AUTH_TOKEN_DAYS=14
+```
+
+`docker-compose.tencent.yml` 已为后端挂载 `zjsuer-data` volume，重建容器后用户数据不会丢失。
+
 ### 4.5 启动服务
 
 ```bash
