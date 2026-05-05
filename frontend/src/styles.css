@@ -1068,11 +1068,16 @@ textarea {
 
   .nav-item {
     min-height: 44px;
-    overflow: hidden;
-    padding: 7px 4px;
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    padding: 6px 3px;
+    word-break: keep-all;
+    font-size: 12px;
     text-align: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .panel-header {

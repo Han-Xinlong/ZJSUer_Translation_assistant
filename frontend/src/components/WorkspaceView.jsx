@@ -56,9 +56,9 @@ function WorkspaceView({
           <span>目标语言</span>
           <select value={targetLanguage} onChange={(event) => onTargetLanguageChange(event.target.value)}>
             <option value="English">English</option>
-            <option value="Japanese">Japanese</option>
-            <option value="Korean">Korean</option>
-            <option value="Chinese">Chinese</option>
+            <option value="Japanese">日本語</option>
+            <option value="Korean">한국어</option>
+            <option value="Chinese">中文</option>
           </select>
         </label>
         <button className="primary-action" disabled={!canSubmit} onClick={onTranslate} type="button">
