@@ -9,6 +9,14 @@ class Settings(BaseSettings):
     allowed_origins: List[str] = ["http://localhost:5173"]
     database_path: str = "data/zjsuer_translation.sqlite3"
     auth_token_days: int = 14
+    speech_provider: str = "mock"
+    speech_max_audio_bytes: int = 3_000_000
+    speech_max_text_chars: int = 50
+    tencentcloud_secret_id: Optional[str] = None
+    tencentcloud_secret_key: Optional[str] = None
+    tencent_asr_endpoint: str = "asr.tencentcloudapi.com"
+    tencent_asr_region: str = "ap-shanghai"
+    tencent_asr_engine: str = "16k_zh"
     ai_provider: str = "mock"
 
     openai_api_key: Optional[str] = None

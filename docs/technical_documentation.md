@@ -102,7 +102,7 @@ ZJSUer_Translation_assistant/
 | lucide-react | 工具按钮图标 | `frontend/src/components/*` |
 | ECharts | 学习趋势图 | `frontend/src/components/LearningDashboard.jsx` |
 | localStorage | 本地学习数据持久化 | `frontend/src/utils/storage.js` |
-| Web Speech API | 浏览器语音录入 | `frontend/src/App.jsx` 编排，`WorkspaceView` 触发 |
+| Web Audio API + 云端 ASR | 中文语音录入 | 前端录制 WAV，后端 `/api/speech/transcribe` 调用语音识别 |
 
 ### 4.2 页面布局
 
@@ -261,19 +261,16 @@ flowchart TD
 
 #### 4.5.4 语音录入
 
-语音录入使用浏览器 Web Speech API：
-
-```js
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-```
+语音录入使用浏览器 `getUserMedia` + Web Audio API 录制音频，再上传到后端语音识别接口。
 
 行为：
 
-- 当前轻量实现固定使用 `zh-CN`，仅支持中文语音输入。
-- 浏览器支持时启动即时识别，`interimResults = true`。
-- 识别中内容写入 `voiceFeedback`，最终结果追加到 `sourceText`。
-- 单次语音最多 10 秒，最多写入 50 字，超过后自动停止或截断。
-- 浏览器不支持时提示用户继续使用文本输入。
+- 当前轻量实现仅支持中文语音输入。
+- 前端录制单声道 WAV，并下采样到 16k。
+- 单次语音最多 10 秒。
+- 前端将 WAV 转为 base64 后请求 `POST /api/speech/transcribe`。
+- 后端返回文本后，前端最多写入 50 字到 `sourceText`。
+- 浏览器不支持录音或没有麦克风权限时，提示用户继续使用文本输入。
 
 限制：
 
@@ -880,7 +877,7 @@ http://62.234.13.61/
 |---|---|---|
 | 数据仅本地保存 | localStorage 容量和结构能力有限 | 升级 IndexedDB |
 | 社群互学为本地版 | 暂无账号和多人同步 | 增加后端用户与同步 |
-| 语音识别依赖浏览器 | 当前轻量版使用 Web Speech API，公网 HTTP 和部分浏览器支持不稳定 | 后续接入云端语音识别 API 或配置 HTTPS |
+| 语音录音依赖浏览器权限 | getUserMedia 在公网环境通常要求 HTTPS | 配置 HTTPS，后端接入腾讯云 ASR |
 | AI 真实效果评测样本不足 | DeepSeek 已接入但尚未形成系统评测集 | 建立样例集并记录人工评分 |
 | 组件仍可继续细分 | `WorkspaceView` 和 `LearningDashboard` 后续可能继续增长 | 按结果区、图表区、演示工具继续拆分 |
 | 浏览器交互测试不足 | 已有工具函数单测，尚缺端到端交互覆盖 | 增加 Playwright |

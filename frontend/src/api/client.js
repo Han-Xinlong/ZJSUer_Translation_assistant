@@ -76,6 +76,23 @@ export async function saveLearningState(token, payload) {
   return response.json();
 }
 
+export async function transcribeSpeech(token, payload) {
+  const response = await fetch(buildApiUrl("/api/speech/transcribe"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(token)
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(await readError(response, "Failed to transcribe speech"));
+  }
+
+  return response.json();
+}
+
 export async function translate(payload) {
   const response = await fetch(buildApiUrl("/api/translate"), {
     method: "POST",

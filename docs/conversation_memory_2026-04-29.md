@@ -1950,18 +1950,24 @@ http://62.234.13.61/
 - 由于项目定位轻量，可先仅支持中文语音。
 - 建议限制单次输入时长或文字量，例如 10 秒语音、50 字字符。
 
-实现决策：
+第一版曾基于浏览器 Web Speech API 完善轻量中文语音输入体验，但用户后续测试发现 Chrome、Edge 和手机端均提示“不支持语音识别”。因此改为“浏览器录音 + 后端云端 ASR”架构：
 
-- 当前阶段不引入第三方云语音服务，避免新增 API Key、费用和部署复杂度。
-- 先基于浏览器 Web Speech API 完善轻量中文语音输入体验。
-- 固定使用 `zh-CN`，仅支持中文语音。
-- 开启 `interimResults`，识别过程中在页面显示即时转写反馈。
-- 单次语音最长 10 秒，最多写入 50 字。
-- 浏览器不支持、麦克风权限不足或公网 HTTP 环境受限时，给出明确提示。
+- 前端不再依赖 Web Speech API。
+- 前端使用 `getUserMedia` + Web Audio API 录制中文语音。
+- 录音被编码为 16k 单声道 WAV，转 base64 后上传后端。
+- 后端新增 `/api/speech/transcribe`，支持 `SPEECH_PROVIDER=mock/tencent`。
+- 真实识别使用腾讯云一句话识别 `SentenceRecognition`，通过 TC3-HMAC-SHA256 签名请求腾讯云 API。
+- 单次录音最长 10 秒，识别结果最多写入 50 字。
+- 浏览器录音权限仍要求 HTTPS 或 localhost；公网 IP + HTTP 可能无法打开麦克风。
 
 涉及文件：
 
-- `frontend/src/App.jsx`：新增 `voiceFeedback` 状态，语音识别 10 秒计时、50 字截断、即时转写反馈、权限/异常提示。
+- `backend/app/schemas/speech.py`：新增语音识别请求/响应 schema。
+- `backend/app/services/speech_provider.py`：新增 mock/tencent 语音识别 Provider，腾讯云 ASR 签名与调用逻辑。
+- `backend/app/api/routes.py`：新增 `/api/speech/transcribe` 接口，登录用户可调用。
+- `backend/.env.example`、`deploy/tencent.env.example`：新增 `SPEECH_PROVIDER`、腾讯云 ASR 密钥和参数配置。
+- `frontend/src/api/client.js`：新增 `transcribeSpeech`。
+- `frontend/src/App.jsx`：新增 `voiceFeedback` 状态，录音、WAV 编码、10 秒计时、50 字限制、上传识别、权限/异常提示。
 - `frontend/src/components/WorkspaceView.jsx`：按钮文案从“语音”调整为“中文语音/识别中”，展示语音反馈消息。
 - `frontend/src/styles.css`：新增 `.voice-message` 提示样式。
-- `docs/user_manual.md`、`docs/technical_documentation.md`：同步说明中文语音、10 秒/50 字限制和浏览器/HTTPS 限制。
+- `docs/user_manual.md`、`docs/technical_documentation.md`、`docs/domestic_deployment.md`：同步说明中文语音、10 秒/50 字限制、腾讯云 ASR 配置和 HTTPS 限制。

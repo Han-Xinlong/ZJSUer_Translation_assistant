@@ -70,9 +70,9 @@ function WorkspaceView({
           {activeAction === "polish" ? <Loader2 className="spin" size={18} /> : <Sparkles size={18} />}
           润色
         </button>
-        <button className="secondary-action" disabled={isListening} onClick={onVoiceInput} type="button">
+        <button className="secondary-action" onClick={onVoiceInput} type="button">
           {isListening ? <Loader2 className="spin" size={18} /> : <Mic size={18} />}
-          {isListening ? "识别中" : "中文语音"}
+          {isListening ? "结束录音" : "中文语音"}
         </button>
         <button className="secondary-action" onClick={onToggleImmersive} type="button">
           <Maximize2 size={18} />

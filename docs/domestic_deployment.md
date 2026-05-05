@@ -191,6 +191,18 @@ AUTH_TOKEN_DAYS=14
 
 `docker-compose.tencent.yml` 已为后端挂载 `zjsuer-data` volume，重建容器后用户数据不会丢失。
 
+如果要启用真实中文语音识别，把 `deploy/tencent.env` 中语音相关配置改为腾讯云 ASR：
+
+```env
+SPEECH_PROVIDER=tencent
+TENCENTCLOUD_SECRET_ID=你的 SecretId
+TENCENTCLOUD_SECRET_KEY=你的 SecretKey
+TENCENT_ASR_REGION=ap-shanghai
+TENCENT_ASR_ENGINE=16k_zh
+```
+
+浏览器录音权限通常要求 HTTPS。只有公网 IP + HTTP 时，Chrome/Edge/手机浏览器可能拒绝麦克风权限。正式测试语音功能前，建议绑定域名并配置 HTTPS。
+
 ### 4.5 启动服务
 
 ```bash

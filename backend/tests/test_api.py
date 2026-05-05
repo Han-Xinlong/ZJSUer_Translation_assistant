@@ -203,3 +203,38 @@ def test_register_login_and_learning_state_roundtrip():
 
     assert get_response.status_code == 200
     assert get_response.json() == state
+
+
+def test_speech_transcribe_uses_mock_provider_after_login():
+    login_response = client.post(
+        "/api/auth/login",
+        json={
+            "email": "student-auth-test@example.com",
+            "password": "secret123",
+        },
+    )
+    if login_response.status_code == 401:
+        login_response = client.post(
+            "/api/auth/register",
+            json={
+                "email": "student-auth-test@example.com",
+                "password": "secret123",
+                "display_name": "测试同学",
+            },
+        )
+    assert login_response.status_code == 200
+    token = login_response.json()["token"]
+
+    response = client.post(
+        "/api/speech/transcribe",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "audio_base64": "UklGRg==",
+            "format": "wav",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["provider"] == "mock"
+    assert payload["text"] == "这是一段中文语音识别演示文本。"

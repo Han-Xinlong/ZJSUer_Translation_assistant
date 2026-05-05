@@ -9,9 +9,15 @@ from app.schemas.ai import (
     TranslateResponse,
 )
 from app.schemas.auth import AuthRequest, AuthResponse, LearningState, LoginRequest, UserPublic
+from app.schemas.speech import SpeechTranscribeRequest, SpeechTranscribeResponse
 from app.core.config import settings
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_provider import AIProviderConfigurationError, AIProviderError
+from app.services.speech_provider import (
+    SpeechRecognitionConfigurationError,
+    SpeechRecognitionError,
+    transcribe_chinese,
+)
 from app.services.user_store import DuplicateUserError, InvalidCredentialsError, user_store
 
 
@@ -139,6 +145,24 @@ def get_learning_state(user: UserPublic = Depends(current_user)) -> LearningStat
 @router.put("/learning-state", response_model=LearningState)
 def save_learning_state(payload: LearningState, user: UserPublic = Depends(current_user)) -> LearningState:
     return user_store.save_learning_state(user.id, payload)
+
+
+@router.post("/speech/transcribe", response_model=SpeechTranscribeResponse)
+def transcribe_speech(
+    payload: SpeechTranscribeRequest,
+    user: UserPublic = Depends(current_user),
+) -> SpeechTranscribeResponse:
+    try:
+        result = transcribe_chinese(payload.audio_base64, payload.format)
+    except SpeechRecognitionConfigurationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except SpeechRecognitionError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return SpeechTranscribeResponse(
+        text=result.text,
+        provider=result.provider,
+        duration_ms=result.duration_ms,
+    )
 
 
 @router.post("/translate", response_model=TranslateResponse)

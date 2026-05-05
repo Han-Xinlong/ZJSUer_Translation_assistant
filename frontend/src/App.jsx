@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { getCurrentUser, getLearningState, getStatus, login, logout, polish, register, saveLearningState, translate } from "./api/client.js";
+import { getCurrentUser, getLearningState, getStatus, login, logout, polish, register, saveLearningState, transcribeSpeech, translate } from "./api/client.js";
 import AuthView from "./components/AuthView.jsx";
 import CollectionView from "./components/CollectionView.jsx";
 import CommunityView from "./components/CommunityView.jsx";
@@ -80,6 +80,7 @@ function App() {
     message: "正在检查 AI 服务状态..."
   });
   const voiceTimerRef = useRef(null);
+  const voiceSessionRef = useRef(null);
 
   const trimmedText = sourceText.trim();
   const isBusy = activeAction !== null;
@@ -232,6 +233,7 @@ function App() {
       if (voiceTimerRef.current) {
         window.clearTimeout(voiceTimerRef.current);
       }
+      cleanupVoiceSession(voiceSessionRef.current);
     };
   }, []);
 
@@ -431,97 +433,112 @@ function App() {
     setErrors((items) => saveUniqueItem(items, text, source, metadata));
   }
 
-  function handleVoiceInput() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setErrorMessage("当前浏览器暂不支持语音识别。建议使用最新版 Chrome，或继续使用文本输入。");
+  async function handleVoiceInput() {
+    if (isListening) {
+      stopVoiceRecording();
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    let insertedCount = 0;
-    let hasTranscript = false;
-    let hasVoiceError = false;
-    let latestInterimText = "";
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setErrorMessage("当前浏览器不支持录音。建议使用最新版 Chrome/Edge，或继续使用文本输入。");
+      setVoiceFeedback("");
+      return;
+    }
 
-    recognition.lang = "zh-CN";
-    recognition.interimResults = true;
-    recognition.continuous = true;
-    recognition.maxAlternatives = 1;
-    recognition.onstart = () => {
+    try {
+      const session = await createVoiceSession();
+      voiceSessionRef.current = session;
       setIsListening(true);
       setErrorMessage("");
-      setVoiceFeedback(`正在识别中文语音，最多 ${VOICE_MAX_SECONDS} 秒 / ${VOICE_MAX_CHARS} 字。`);
+      setVoiceFeedback(`正在录制中文语音，最多 ${VOICE_MAX_SECONDS} 秒。再次点击可提前结束。`);
       voiceTimerRef.current = window.setTimeout(() => {
-        setVoiceFeedback("已达到 10 秒上限，正在整理识别结果。");
-        recognition.stop();
+        setVoiceFeedback("已达到 10 秒上限，正在上传识别。");
+        stopVoiceRecording();
       }, VOICE_MAX_SECONDS * 1000);
-    };
-    recognition.onresult = (event) => {
-      let interimTranscript = "";
-      let finalTranscript = "";
-
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const transcript = event.results[index][0].transcript;
-        if (event.results[index].isFinal) {
-          finalTranscript += transcript;
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      if (interimTranscript.trim()) {
-        hasTranscript = true;
-        latestInterimText = interimTranscript.trim();
-        setVoiceFeedback(`识别中：${latestInterimText.slice(0, VOICE_MAX_CHARS)}`);
-      }
-
-      if (finalTranscript.trim()) {
-        hasTranscript = true;
-        const remaining = VOICE_MAX_CHARS - insertedCount;
-        const acceptedText = finalTranscript.trim().slice(0, Math.max(remaining, 0));
-        if (acceptedText) {
-          insertedCount += acceptedText.length;
-          setSourceText((value) => `${value}${value ? "\n" : ""}${acceptedText}`);
-          setVoiceFeedback(`已写入 ${insertedCount}/${VOICE_MAX_CHARS} 字，可继续编辑或点击翻译。`);
-        }
-        if (insertedCount >= VOICE_MAX_CHARS) {
-          setVoiceFeedback(`已达到 ${VOICE_MAX_CHARS} 字上限，可继续手动编辑。`);
-          recognition.stop();
-        }
-      }
-    };
-    recognition.onerror = (event) => {
-      hasVoiceError = true;
-      const permissionErrors = ["not-allowed", "service-not-allowed"];
-      const message = permissionErrors.includes(event.error)
-        ? "语音识别需要麦克风权限，且公网环境通常需要 HTTPS。"
-        : "语音识别失败，请稍后重试或继续使用文本输入。";
-      setErrorMessage(message);
-      setVoiceFeedback("");
-    };
-    recognition.onend = () => {
-      if (voiceTimerRef.current) {
-        window.clearTimeout(voiceTimerRef.current);
-        voiceTimerRef.current = null;
-      }
+    } catch (error) {
       setIsListening(false);
-      if (insertedCount === 0 && latestInterimText) {
-        const acceptedText = latestInterimText.slice(0, VOICE_MAX_CHARS);
-        setSourceText((value) => `${value}${value ? "\n" : ""}${acceptedText}`);
-        setVoiceFeedback(`已写入 ${acceptedText.length}/${VOICE_MAX_CHARS} 字，可继续编辑或点击翻译。`);
+      setVoiceFeedback("");
+      setErrorMessage(error.message || "录音启动失败，请检查麦克风权限后重试。");
+    }
+  }
+
+  async function createVoiceSession() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) {
+      throw new Error("当前浏览器不支持录音处理。建议使用最新版 Chrome/Edge。");
+    }
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      throw new Error("录音需要麦克风权限，公网环境请先配置 HTTPS。");
+    }
+
+    const audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(stream);
+    const processor = audioContext.createScriptProcessor(4096, 1, 1);
+    const gain = audioContext.createGain();
+    const chunks = [];
+    gain.gain.value = 0;
+    processor.onaudioprocess = (event) => {
+      chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+    };
+    source.connect(processor);
+    processor.connect(gain);
+    gain.connect(audioContext.destination);
+
+    return {
+      audioContext,
+      chunks,
+      gain,
+      processor,
+      sampleRate: audioContext.sampleRate,
+      source,
+      stream,
+      stopped: false
+    };
+  }
+
+  async function stopVoiceRecording() {
+    const session = voiceSessionRef.current;
+    if (!session || session.stopped) {
+      return;
+    }
+
+    session.stopped = true;
+    voiceSessionRef.current = null;
+    if (voiceTimerRef.current) {
+      window.clearTimeout(voiceTimerRef.current);
+      voiceTimerRef.current = null;
+    }
+    setIsListening(false);
+    cleanupVoiceSession(session);
+
+    const samples = mergeAudioChunks(session.chunks);
+    if (samples.length === 0) {
+      setVoiceFeedback("没有录到清晰声音，可以靠近麦克风后再试。");
+      return;
+    }
+
+    try {
+      setVoiceFeedback("正在上传云端识别，请稍候。");
+      const wavBlob = encodeWav(samples, session.sampleRate, 16000);
+      const audioBase64 = await blobToBase64(wavBlob);
+      const result = await transcribeSpeech(authToken, {
+        audio_base64: audioBase64,
+        format: "wav"
+      });
+      const acceptedText = result.text.trim().slice(0, VOICE_MAX_CHARS);
+      if (!acceptedText) {
+        setVoiceFeedback("没有识别到清晰中文语音，可以重新录制。");
         return;
       }
-      if (!hasTranscript && !hasVoiceError) {
-        setVoiceFeedback("没有识别到清晰中文语音，可以靠近麦克风后再试。");
-      }
-    };
-    try {
-      recognition.start();
-    } catch {
-      setIsListening(false);
+      setSourceText((value) => `${value}${value ? "\n" : ""}${acceptedText}`);
+      setVoiceFeedback(`已识别并写入 ${acceptedText.length}/${VOICE_MAX_CHARS} 字。`);
+    } catch (error) {
+      setErrorMessage(error.message || "云端语音识别失败，请稍后重试。");
       setVoiceFeedback("");
-      setErrorMessage("语音识别启动失败，请刷新页面或继续使用文本输入。");
     }
   }
 
@@ -708,3 +725,98 @@ function App() {
 }
 
 export default App;
+
+function cleanupVoiceSession(session) {
+  if (!session) {
+    return;
+  }
+  try {
+    session.processor?.disconnect();
+    session.source?.disconnect();
+    session.gain?.disconnect();
+  } catch {
+    // Ignore cleanup races when the browser already closed the audio graph.
+  }
+  session.stream?.getTracks().forEach((track) => track.stop());
+  if (session.audioContext?.state !== "closed") {
+    session.audioContext?.close();
+  }
+}
+
+function mergeAudioChunks(chunks) {
+  const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
+  const result = new Float32Array(length);
+  let offset = 0;
+  chunks.forEach((chunk) => {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  });
+  return result;
+}
+
+function encodeWav(samples, inputSampleRate, outputSampleRate) {
+  const pcm = downsample(samples, inputSampleRate, outputSampleRate);
+  const buffer = new ArrayBuffer(44 + pcm.length * 2);
+  const view = new DataView(buffer);
+  writeString(view, 0, "RIFF");
+  view.setUint32(4, 36 + pcm.length * 2, true);
+  writeString(view, 8, "WAVE");
+  writeString(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, outputSampleRate, true);
+  view.setUint32(28, outputSampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(view, 36, "data");
+  view.setUint32(40, pcm.length * 2, true);
+
+  let offset = 44;
+  pcm.forEach((sample) => {
+    const clamped = Math.max(-1, Math.min(1, sample));
+    view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+    offset += 2;
+  });
+
+  return new Blob([view], { type: "audio/wav" });
+}
+
+function downsample(samples, inputSampleRate, outputSampleRate) {
+  if (outputSampleRate >= inputSampleRate) {
+    return samples;
+  }
+  const ratio = inputSampleRate / outputSampleRate;
+  const length = Math.floor(samples.length / ratio);
+  const result = new Float32Array(length);
+  for (let index = 0; index < length; index += 1) {
+    const start = Math.floor(index * ratio);
+    const end = Math.floor((index + 1) * ratio);
+    let sum = 0;
+    let count = 0;
+    for (let sampleIndex = start; sampleIndex < end && sampleIndex < samples.length; sampleIndex += 1) {
+      sum += samples[sampleIndex];
+      count += 1;
+    }
+    result[index] = count > 0 ? sum / count : 0;
+  }
+  return result;
+}
+
+function writeString(view, offset, value) {
+  for (let index = 0; index < value.length; index += 1) {
+    view.setUint8(offset + index, value.charCodeAt(index));
+  }
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.onerror = () => reject(new Error("读取录音数据失败，请重新录音。"));
+    reader.readAsDataURL(blob);
+  });
+}

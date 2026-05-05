@@ -29,6 +29,7 @@ ZJSUer Translation Assistant 不是一个复杂的专业翻译平台，而是聚
 ### 1. 智能输入
 
 - 支持文本输入与语音录入。
+- 语音录入采用浏览器录音 + 后端云端 ASR，轻量版仅支持中文。
 - 提供沉浸式写作界面。
 - 在写作过程中保持 AI 随时待命，方便用户快速求助。
 
@@ -219,6 +220,7 @@ bash scripts/dev_backend.sh
 - `POST /api/auth/register`：注册账号。
 - `POST /api/auth/login`：登录账号。
 - `GET/PUT /api/learning-state`：读取或保存当前用户学习数据。
+- `POST /api/speech/transcribe`：上传中文录音并返回识别文本。
 
 脚本会优先使用 `python3.10` 创建虚拟环境；如果本机暂未安装 Python 3.10，则回退到 `python3`。
 
