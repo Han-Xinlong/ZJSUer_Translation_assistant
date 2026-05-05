@@ -47,7 +47,8 @@ function WorkspaceView({
   polishSource,
   sourceText,
   targetLanguage,
-  translationResult
+  translationResult,
+  voiceFeedback
 }) {
   return (
     <>
@@ -71,7 +72,7 @@ function WorkspaceView({
         </button>
         <button className="secondary-action" disabled={isListening} onClick={onVoiceInput} type="button">
           {isListening ? <Loader2 className="spin" size={18} /> : <Mic size={18} />}
-          语音
+          {isListening ? "识别中" : "中文语音"}
         </button>
         <button className="secondary-action" onClick={onToggleImmersive} type="button">
           <Maximize2 size={18} />
@@ -80,6 +81,7 @@ function WorkspaceView({
       </div>
 
       {errorMessage && <p className="error-message">{errorMessage}</p>}
+      {voiceFeedback && <p className="voice-message">{voiceFeedback}</p>}
 
       <label className="context-box">
         <span>语境说明</span>

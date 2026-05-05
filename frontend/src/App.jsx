@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getCurrentUser, getLearningState, getStatus, login, logout, polish, register, saveLearningState, translate } from "./api/client.js";
 import AuthView from "./components/AuthView.jsx";
@@ -41,6 +41,8 @@ import {
 const DEFAULT_GOALS = {
   dailyTarget: 3
 };
+const VOICE_MAX_SECONDS = 10;
+const VOICE_MAX_CHARS = 50;
 
 function App() {
   const [authToken, setAuthToken] = useState(() => loadText(AUTH_TOKEN_KEY));
@@ -65,6 +67,7 @@ function App() {
   const [contextText, setContextText] = useState("");
   const [isImmersive, setIsImmersive] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceFeedback, setVoiceFeedback] = useState("");
   const [activeView, setActiveView] = useState("workspace");
   const [selectedHistoryId, setSelectedHistoryId] = useState(() => history[0]?.id || null);
   const [activeAction, setActiveAction] = useState(null);
@@ -76,6 +79,7 @@ function App() {
     configured: false,
     message: "正在检查 AI 服务状态..."
   });
+  const voiceTimerRef = useRef(null);
 
   const trimmedText = sourceText.trim();
   const isBusy = activeAction !== null;
@@ -220,6 +224,14 @@ function App() {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (voiceTimerRef.current) {
+        window.clearTimeout(voiceTimerRef.current);
+      }
     };
   }, []);
 
@@ -422,29 +434,95 @@ function App() {
   function handleVoiceInput() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setErrorMessage("当前浏览器暂不支持语音识别。可以继续使用文本输入。");
+      setErrorMessage("当前浏览器暂不支持语音识别。建议使用最新版 Chrome，或继续使用文本输入。");
       return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = targetLanguage === "Chinese" ? "zh-CN" : "en-US";
-    recognition.interimResults = false;
+    let insertedCount = 0;
+    let hasTranscript = false;
+    let hasVoiceError = false;
+    let latestInterimText = "";
+
+    recognition.lang = "zh-CN";
+    recognition.interimResults = true;
+    recognition.continuous = true;
     recognition.maxAlternatives = 1;
     recognition.onstart = () => {
       setIsListening(true);
       setErrorMessage("");
+      setVoiceFeedback(`正在识别中文语音，最多 ${VOICE_MAX_SECONDS} 秒 / ${VOICE_MAX_CHARS} 字。`);
+      voiceTimerRef.current = window.setTimeout(() => {
+        setVoiceFeedback("已达到 10 秒上限，正在整理识别结果。");
+        recognition.stop();
+      }, VOICE_MAX_SECONDS * 1000);
     };
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setSourceText((value) => `${value}${value ? "\n" : ""}${transcript}`);
+      let interimTranscript = "";
+      let finalTranscript = "";
+
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const transcript = event.results[index][0].transcript;
+        if (event.results[index].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      if (interimTranscript.trim()) {
+        hasTranscript = true;
+        latestInterimText = interimTranscript.trim();
+        setVoiceFeedback(`识别中：${latestInterimText.slice(0, VOICE_MAX_CHARS)}`);
+      }
+
+      if (finalTranscript.trim()) {
+        hasTranscript = true;
+        const remaining = VOICE_MAX_CHARS - insertedCount;
+        const acceptedText = finalTranscript.trim().slice(0, Math.max(remaining, 0));
+        if (acceptedText) {
+          insertedCount += acceptedText.length;
+          setSourceText((value) => `${value}${value ? "\n" : ""}${acceptedText}`);
+          setVoiceFeedback(`已写入 ${insertedCount}/${VOICE_MAX_CHARS} 字，可继续编辑或点击翻译。`);
+        }
+        if (insertedCount >= VOICE_MAX_CHARS) {
+          setVoiceFeedback(`已达到 ${VOICE_MAX_CHARS} 字上限，可继续手动编辑。`);
+          recognition.stop();
+        }
+      }
     };
-    recognition.onerror = () => {
-      setErrorMessage("语音识别失败，请检查浏览器权限后重试。");
+    recognition.onerror = (event) => {
+      hasVoiceError = true;
+      const permissionErrors = ["not-allowed", "service-not-allowed"];
+      const message = permissionErrors.includes(event.error)
+        ? "语音识别需要麦克风权限，且公网环境通常需要 HTTPS。"
+        : "语音识别失败，请稍后重试或继续使用文本输入。";
+      setErrorMessage(message);
+      setVoiceFeedback("");
     };
     recognition.onend = () => {
+      if (voiceTimerRef.current) {
+        window.clearTimeout(voiceTimerRef.current);
+        voiceTimerRef.current = null;
+      }
       setIsListening(false);
+      if (insertedCount === 0 && latestInterimText) {
+        const acceptedText = latestInterimText.slice(0, VOICE_MAX_CHARS);
+        setSourceText((value) => `${value}${value ? "\n" : ""}${acceptedText}`);
+        setVoiceFeedback(`已写入 ${acceptedText.length}/${VOICE_MAX_CHARS} 字，可继续编辑或点击翻译。`);
+        return;
+      }
+      if (!hasTranscript && !hasVoiceError) {
+        setVoiceFeedback("没有识别到清晰中文语音，可以靠近麦克风后再试。");
+      }
     };
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      setIsListening(false);
+      setVoiceFeedback("");
+      setErrorMessage("语音识别启动失败，请刷新页面或继续使用文本输入。");
+    }
   }
 
   function handleShareToCommunity(text, source, metadata = {}) {
@@ -562,6 +640,7 @@ function App() {
               sourceText={sourceText}
               targetLanguage={targetLanguage}
               translationResult={translationResult}
+              voiceFeedback={voiceFeedback}
             />
           )}
 

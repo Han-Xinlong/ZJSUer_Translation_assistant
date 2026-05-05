@@ -328,6 +328,16 @@ input {
   padding: 10px 12px;
 }
 
+.voice-message {
+  border: 1px solid #a7d8d0;
+  border-radius: 8px;
+  background: #f0fdfa;
+  color: #0f4c4a;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+}
+
 .spin {
   animation: spin 0.9s linear infinite;
 }

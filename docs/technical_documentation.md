@@ -269,8 +269,10 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 
 行为：
 
-- 浏览器支持时启动识别。
-- 识别结果追加到 `sourceText`。
+- 当前轻量实现固定使用 `zh-CN`，仅支持中文语音输入。
+- 浏览器支持时启动即时识别，`interimResults = true`。
+- 识别中内容写入 `voiceFeedback`，最终结果追加到 `sourceText`。
+- 单次语音最多 10 秒，最多写入 50 字，超过后自动停止或截断。
 - 浏览器不支持时提示用户继续使用文本输入。
 
 限制：
@@ -878,7 +880,7 @@ http://62.234.13.61/
 |---|---|---|
 | 数据仅本地保存 | localStorage 容量和结构能力有限 | 升级 IndexedDB |
 | 社群互学为本地版 | 暂无账号和多人同步 | 增加后端用户与同步 |
-| 语音识别依赖浏览器 | Safari/Chrome 支持差异明显 | 增加兼容提示和手动 fallback |
+| 语音识别依赖浏览器 | 当前轻量版使用 Web Speech API，公网 HTTP 和部分浏览器支持不稳定 | 后续接入云端语音识别 API 或配置 HTTPS |
 | AI 真实效果评测样本不足 | DeepSeek 已接入但尚未形成系统评测集 | 建立样例集并记录人工评分 |
 | 组件仍可继续细分 | `WorkspaceView` 和 `LearningDashboard` 后续可能继续增长 | 按结果区、图表区、演示工具继续拆分 |
 | 浏览器交互测试不足 | 已有工具函数单测，尚缺端到端交互覆盖 | 增加 Playwright |
