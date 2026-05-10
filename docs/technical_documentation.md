@@ -435,13 +435,19 @@ Promise.all([
 
 - `frontend/src/data/corpus.js`
 
+推荐引擎：
+
+- `frontend/src/utils/corpusRecommendation.js`
+
 匹配逻辑：
 
-- 将 `sourceText`、最近翻译、最近润色结果合并。
-- 转小写。
-- 与每条语料的 keywords 匹配。
-- 展示最多 3 条。
-- 无匹配时展示默认前三条。
+- 将 `sourceText`、`contextText`、最近翻译、最近润色结果、表达库和近期历史拆成不同信号桶。
+- 当前输入和语境说明权重最高，用于保证推荐能随写作场景即时变化。
+- AI 输出、近期历史和已收藏表达提供辅助权重，用于把用户刚刚练过、收藏过的表达反哺到推荐列表。
+- 收藏推荐语料时，会把 `corpusId`、`corpusTitle`、`corpusKeywords`、`relatedExpressions` 写入表达库条目。
+- 下一轮推荐会读取这些标签，自动推送同主题或同类表达。
+- 展示最多 3 条，并显示简短推荐理由，例如“当前语境：邮件 / formal”或“关联已收藏表达”。
+- 无明确匹配时仍展示默认学习主题，保证页面不空。
 
 语料结构：
 
@@ -451,7 +457,8 @@ Promise.all([
   "keywords": ["校园", "学习", "生活", "campus", "study"],
   "title": "Campus Life",
   "expression": "campus learning and daily life",
-  "note": "适合描述校园学习、课程和日常活动。"
+  "note": "适合描述校园学习、课程和日常活动。",
+  "relatedExpressions": ["student community", "course project"]
 }
 ```
 

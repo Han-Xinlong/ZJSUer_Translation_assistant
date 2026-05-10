@@ -1971,3 +1971,51 @@ http://62.234.13.61/
 - `frontend/src/components/WorkspaceView.jsx`：按钮文案从“语音”调整为“中文语音/识别中”，展示语音反馈消息。
 - `frontend/src/styles.css`：新增 `.voice-message` 提示样式。
 - `docs/user_manual.md`、`docs/technical_documentation.md`、`docs/domestic_deployment.md`：同步说明中文语音、10 秒/50 字限制、腾讯云 ASR 配置和 HTTPS 限制。
+
+### 26.8 同学试用反馈：语境驱动语料推荐与收藏反哺
+
+同学试用后提出：
+
+- 推荐语料希望能按输入语境自动更新。
+- 收藏表达后，希望系统能自动关联推送同类内容。
+
+作为大创指导老师和全栈实现判断：这条反馈非常适合强化项目创新点，因为它能把“推荐语料”从静态展示升级为轻量学习闭环：
+
+```text
+输入/语境 -> 推荐语料 -> 收藏表达 -> 标签沉淀 -> 同类语料再推荐
+```
+
+已实现：
+
+- 新增 `frontend/src/utils/corpusRecommendation.js`，将语料推荐从 `App.jsx` 中的简单关键词过滤抽成独立推荐引擎。
+- 推荐信号从原来的“原文 + AI 输出”扩展为：
+  - 原文输入 `sourceText`。
+  - 语境说明 `contextText`。
+  - 最近翻译结果。
+  - 最近润色结果。
+  - 表达库已收藏内容。
+  - 近期历史练习。
+- 当前输入和语境说明权重最高，保证用户一边修改语境，一边能看到推荐语料自动变化。
+- 收藏推荐语料时，表达库条目会额外保存 `corpusId`、`corpusTitle`、`corpusKeywords`、`relatedExpressions`。
+- 下一轮推荐会读取表达库中的语料标签，自动提升同主题、同类表达的推荐权重。
+- 推荐卡片新增推荐理由展示，例如“当前语境：邮件 / formal”“关联已收藏表达”“贴近近期练习”。
+- 扩展 `frontend/src/data/corpus.js`，新增正式邮件、跨文化反思等更贴近学生写作场景的语料主题，并为语料补充 `relatedExpressions`。
+
+涉及文件：
+
+- `frontend/src/data/corpus.js`
+- `frontend/src/utils/corpusRecommendation.js`
+- `frontend/src/utils/corpusRecommendation.test.js`
+- `frontend/src/App.jsx`
+- `frontend/src/components/CorpusPanel.jsx`
+- `frontend/src/styles.css`
+- `README.md`
+- `docs/user_manual.md`
+- `docs/technical_documentation.md`
+
+验证：
+
+- 前端：`npm test`，5 个测试文件、18 个测试用例全部通过。
+- 前端：`npm run build`，构建通过。
+- 后端：`PYTHONPATH=. .venv/bin/pytest`，11 个测试用例全部通过。
+- 后端：`python3 -m compileall backend/app`，编译检查通过。

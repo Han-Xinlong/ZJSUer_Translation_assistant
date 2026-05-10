@@ -565,6 +565,20 @@ textarea {
   margin-bottom: 10px;
 }
 
+.corpus-grid em {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  background: #edf7f6;
+  color: #0f766e;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.4;
+  margin: 0 0 10px;
+  max-width: 100%;
+  padding: 4px 8px;
+}
+
 .corpus-grid button,
 .community-list button {
   border: 1px solid #cfd7df;

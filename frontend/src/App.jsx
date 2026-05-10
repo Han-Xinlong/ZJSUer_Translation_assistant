@@ -9,7 +9,6 @@ import InsightPanel from "./components/InsightPanel.jsx";
 import LearningDashboard from "./components/LearningDashboard.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import WorkspaceView from "./components/WorkspaceView.jsx";
-import { corpusExamples } from "./data/corpus.js";
 import {
   demoCommunityPosts,
   demoErrors,
@@ -18,6 +17,7 @@ import {
   demoHistory
 } from "./data/demoLearning.js";
 import { sampleHistory } from "./data/mockHistory.js";
+import { buildCorpusRecommendations } from "./utils/corpusRecommendation.js";
 import { countTodayItems, toDateKey } from "./utils/date.js";
 import { buildLearningReport } from "./utils/report.js";
 import {
@@ -110,11 +110,15 @@ function App() {
   }, [history]);
 
   const corpusRecommendations = useMemo(() => {
-    const source = `${sourceText} ${translationResult?.translation || ""} ${polishResult?.polished_text || ""}`.toLowerCase();
-    return corpusExamples
-      .filter((item) => item.keywords.some((keyword) => source.includes(keyword.toLowerCase())))
-      .slice(0, 3);
-  }, [polishResult, sourceText, translationResult]);
+    return buildCorpusRecommendations({
+      contextText,
+      expressions,
+      history,
+      polishText: polishResult?.polished_text || "",
+      sourceText,
+      translationText: translationResult?.translation || ""
+    });
+  }, [contextText, expressions, history, polishResult, sourceText, translationResult]);
 
   useEffect(() => {
     saveCollection(HISTORY_KEY, history);

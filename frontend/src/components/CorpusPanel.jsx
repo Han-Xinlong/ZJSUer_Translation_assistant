@@ -12,7 +12,16 @@ function CorpusPanel({ items, onSaveExpression }) {
             <span>{item.title}</span>
             <p>{item.expression}</p>
             <small>{item.note}</small>
-            <button type="button" onClick={() => onSaveExpression(item.expression, "推荐语料")}>
+            {item.reason && <em>{item.reason}</em>}
+            <button
+              type="button"
+              onClick={() => onSaveExpression(item.expression, "推荐语料", {
+                corpusId: item.id,
+                corpusKeywords: item.keywords,
+                corpusTitle: item.title,
+                relatedExpressions: item.relatedExpressions
+              })}
+            >
               收藏表达
             </button>
           </article>
